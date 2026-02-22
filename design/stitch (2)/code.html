@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Glow - Period Tracker Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec136d",
+                        "background-light": "#f8f6f7",
+                        "background-dark": "#221018",
+                        "pastel-pink": "#FADADD",
+                        "pastel-yellow": "#FFF9C4",
+                        "pastel-blue": "#E1F5FE",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .soft-shadow {
+            box-shadow: 0 20px 40px -15px rgba(236, 19, 109, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<!-- Header Section -->
+<header class="flex items-center justify-between px-6 py-6 max-w-lg mx-auto">
+<div class="flex flex-col">
+<h2 class="text-slate-500 dark:text-slate-400 text-sm font-medium tracking-wide uppercase">Welcome back</h2>
+<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Good morning, Sarah</h1>
+</div>
+<div class="relative">
+<div class="size-12 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 soft-shadow">
+<img alt="Sarah's Profile" class="w-full h-full object-cover" data-alt="Portrait of a smiling woman with long dark hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg-FsbUw_p61wEhIe1q91Dko0zKttNWABoLYJbVhobsgS0cezmmDobanSFTOkvUywXvHZlRhfKtxS7v0rk-lT1gOZYOyfcs_-Z4lunZKQhKrPFAcHfSDR7cks1snmlDvxkWZnj7z-5H9wGoSF_bScm8FIcjmDHLbbnsrGI0_7fVF-3iVwcwFw7rhQWW1p2O772L01dNBWo_Z0abOADAOP32Zq6SiBl80JWdVP2Sefj0QJaW-PHjGg6ERXkeo04NIFFh0yGXRGAe2I"/>
+</div>
+<div class="absolute bottom-0 right-0 size-3 bg-primary rounded-full border-2 border-white dark:border-background-dark"></div>
+</div>
+</header>
+<main class="max-w-lg mx-auto px-6 space-y-8">
+<!-- Hero Progress Section -->
+<section class="relative">
+<div class="glass rounded-xl p-8 flex flex-col items-center text-center soft-shadow bg-white/60 dark:bg-slate-900/40">
+<div class="relative size-56 flex items-center justify-center mb-6">
+<!-- Progress Ring -->
+<svg class="progress-ring size-full" viewbox="0 0 100 100">
+<circle class="text-slate-100 dark:text-slate-800" cx="50" cy="50" fill="transparent" r="45" stroke="currentColor" stroke-width="6"></circle>
+<circle cx="50" cy="50" fill="transparent" r="45" stroke="url(#gradient)" stroke-dasharray="283" stroke-dashoffset="120" stroke-linecap="round" stroke-width="6"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#ec136d"></stop>
+<stop offset="100%" stop-color="#60a5fa"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Inner Content -->
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-slate-400 text-sm font-semibold tracking-wider uppercase">Cycle Day</span>
+<span class="text-5xl font-extrabold text-slate-900 dark:text-white my-1">16</span>
+<span class="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-full">Ovulation Phase</span>
+</div>
+</div>
+<div class="space-y-1">
+<p class="text-lg font-medium text-slate-600 dark:text-slate-300">Next period in <span class="text-primary font-bold">5 days</span></p>
+<p class="text-sm text-slate-400">High chance of conception today</p>
+</div>
+</div>
+</section>
+<!-- Quick Log Icons -->
+<section>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">How are you feeling?</h3>
+<button class="text-primary text-sm font-semibold">View History</button>
+</div>
+<div class="grid grid-cols-4 gap-4">
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-16 rounded-full bg-white dark:bg-slate-800 glass flex items-center justify-center soft-shadow group-hover:bg-primary/5 transition-all">
+<span class="material-symbols-outlined text-primary text-2xl">sentiment_satisfied</span>
+</div>
+<span class="text-xs font-medium text-slate-500">Mood</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-16 rounded-full bg-white dark:bg-slate-800 glass flex items-center justify-center soft-shadow group-hover:bg-primary/5 transition-all">
+<span class="material-symbols-outlined text-primary text-2xl">bolt</span>
+</div>
+<span class="text-xs font-medium text-slate-500">Energy</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-16 rounded-full bg-white dark:bg-slate-800 glass flex items-center justify-center soft-shadow group-hover:bg-primary/5 transition-all">
+<span class="material-symbols-outlined text-primary text-2xl">physical_therapy</span>
+</div>
+<span class="text-xs font-medium text-slate-500">Cramps</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-16 rounded-full bg-white dark:bg-slate-800 glass flex items-center justify-center soft-shadow group-hover:bg-primary/5 transition-all">
+<span class="material-symbols-outlined text-primary text-2xl">bedtime</span>
+</div>
+<span class="text-xs font-medium text-slate-500">Sleep</span>
+</div>
+</div>
+</section>
+<!-- Monthly Calendar View -->
+<section class="pb-12">
+<div class="glass rounded-xl p-6 bg-white/60 dark:bg-slate-900/40 soft-shadow">
+<div class="flex items-center justify-between mb-6">
+<button class="size-10 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">chevron_left</span>
+</button>
+<h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">October 2023</h3>
+<button class="size-10 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-7 gap-y-2 text-center mb-4">
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">S</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">M</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">T</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">W</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">T</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">F</div>
+<div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">S</div>
+<!-- Calendar Days with custom highlighting -->
+<!-- Row 1 -->
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-300 text-sm">28</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-300 text-sm">29</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-300 text-sm">30</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">1</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">2</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">3</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">4</span></div>
+<!-- Period Days (Pink) -->
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-primary/20 text-primary font-bold text-sm">5</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-primary/20 text-primary font-bold text-sm">6</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-primary/20 text-primary font-bold text-sm">7</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-primary/20 text-primary font-bold text-sm">8</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">9</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">10</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">11</span></div>
+<!-- Ovulation Phase (Blue) -->
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-blue-100 text-blue-600 text-sm">12</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-blue-100 text-blue-600 text-sm">13</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-blue-100 text-blue-600 text-sm">14</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-blue-100 text-blue-600 text-sm">15</span></div>
+<div class="p-1 relative">
+<span class="flex items-center justify-center size-10 rounded-full bg-blue-600 text-white font-bold text-sm soft-shadow">16</span>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 size-1 bg-blue-600 rounded-full"></div>
+</div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-blue-100 text-blue-600 text-sm">17</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-blue-100 text-blue-600 text-sm">18</span></div>
+<!-- Normal/PMS Phase (Yellow) -->
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">19</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">20</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">21</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full text-slate-800 dark:text-slate-200 text-sm">22</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-yellow-100 text-yellow-700 text-sm">23</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-yellow-100 text-yellow-700 text-sm">24</span></div>
+<div class="p-1"><span class="flex items-center justify-center size-10 rounded-full bg-yellow-100 text-yellow-700 text-sm">25</span></div>
+</div>
+<!-- Legend -->
+<div class="flex items-center justify-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 mt-2">
+<div class="flex items-center gap-1.5">
+<div class="size-2 rounded-full bg-primary/40"></div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Period</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="size-2 rounded-full bg-blue-400"></div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Ovulation</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="size-2 rounded-full bg-yellow-400"></div>
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">PMS</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-6 inset-x-6 max-w-lg mx-auto h-20 glass rounded-full flex items-center justify-between px-8 soft-shadow z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1">home</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">analytics</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Insights</span>
+</a>
+<!-- Central Plus Button -->
+<div class="relative -top-6">
+<button class="size-16 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">book</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Log</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">person</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Profile</span>
+</a>
+</nav>
+</body></html>

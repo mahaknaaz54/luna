@@ -1,0 +1,109 @@
+.insight-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.insight-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+}
+
+.insight-icon-container {
+    width: 52px;
+    height: 52px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.insight-icon-glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 24px;
+    opacity: 0.3;
+    filter: blur(8px);
+    z-index: -1;
+}
+
+.insight-content {
+    flex: 1;
+}
+
+.insight-text {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--text-main);
+    margin: 0;
+}
+
+/* Phase Gradients for backgrounds - semi-transparent */
+.insight-card.phase-period {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 220, 235, 0.4) 100%);
+}
+
+.insight-card.phase-ovulation {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 248, 225, 0.4) 100%);
+}
+
+.insight-card.phase-pms {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(220, 235, 255, 0.4) 100%);
+}
+
+.insight-card.phase-safe {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(240, 255, 230, 0.4) 100%);
+}
+
+/* Icon backgrounds and glows */
+.phase-period .insight-icon-container {
+    background: var(--grad-period);
+    color: white;
+}
+
+.phase-period .insight-icon-glow {
+    background: var(--grad-period);
+}
+
+.phase-ovulation .insight-icon-container {
+    background: var(--grad-ovulation);
+    color: white;
+}
+
+.phase-ovulation .insight-icon-glow {
+    background: var(--grad-ovulation);
+}
+
+.phase-pms .insight-icon-container {
+    background: var(--grad-pms);
+    color: white;
+}
+
+.phase-pms .insight-icon-glow {
+    background: var(--grad-pms);
+}
+
+.phase-safe .insight-icon-container {
+    background: var(--grad-follicular);
+    color: white;
+}
+
+.phase-safe .insight-icon-glow {
+    background: var(--grad-follicular);
+}

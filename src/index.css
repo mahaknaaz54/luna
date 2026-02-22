@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+
+/* ─────────────────────────────────────────────
+   BASE TOKENS  (Light Mode — default)
+───────────────────────────────────────────── */
+:root {
+  /* Phase Gradients */
+  --grad-period: linear-gradient(135deg, #ff7eb9 0%, #ff65a3 50%, #7d12ff 100%);
+  --grad-ovulation: linear-gradient(135deg, #ffd1ff 0%, #fbc2eb 50%, #a18cd1 100%);
+  --grad-pms: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  --grad-safe: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+
+  /* Phase Solid Colors */
+  --color-period: #ff7eb9;
+  --color-ovulation: #fbc2eb;
+  --color-pms: #a18cd1;
+  --color-safe: #96e6a1;
+
+  /* Theme Surface Tokens */
+  --bg-soft: #fffafa;
+  --bg-page: #fffafa;
+  --glass-bg: rgba(255, 255, 255, 0.50);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+  --text-main: #3d3347;
+  --text-soft: #8e8e8e;
+  --text-muted: rgba(61, 51, 71, 0.45);
+  --card-bg: rgba(255, 255, 255, 0.55);
+  --input-bg: rgba(255, 255, 255, 0.35);
+  --divider: rgba(0, 0, 0, 0.06);
+  --nav-bg: rgba(255, 255, 255, 0.75);
+  --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.07);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --overlay-bg: rgba(255, 255, 255, 0.80);
+
+  /* Care Mode Timing */
+  --anim-speed-factor: 1;
+  --glow-intensity: 1;
+  --blur-intensity: 80px;
+}
+
+/* ─────────────────────────────────────────────
+   LIGHT THEME  (explicit — same as default)
+───────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-soft: #fffafa;
+  --bg-page: #fffafa;
+  --glass-bg: rgba(255, 255, 255, 0.50);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --text-main: #3d3347;
+  --text-soft: #8e8e8e;
+  --text-muted: rgba(61, 51, 71, 0.45);
+  --card-bg: rgba(255, 255, 255, 0.55);
+  --input-bg: rgba(255, 255, 255, 0.35);
+  --divider: rgba(0, 0, 0, 0.06);
+  --nav-bg: rgba(255, 255, 255, 0.75);
+  --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.07);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --overlay-bg: rgba(255, 255, 255, 0.80);
+}
+
+/* ─────────────────────────────────────────────
+   SOFT DARK THEME  — warm indigo, not harsh black
+───────────────────────────────────────────── */
+[data-theme="soft-dark"] {
+  --bg-soft: #0a0714;
+  --bg-page: #0a0714;
+  --glass-bg: rgba(30, 20, 50, 0.70);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --text-main: #e8dff4;
+  --text-soft: #9d8fc0;
+  --text-muted: rgba(232, 223, 244, 0.40);
+  --card-bg: rgba(40, 28, 60, 0.65);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --divider: rgba(255, 255, 255, 0.07);
+  --nav-bg: rgba(22, 16, 42, 0.85);
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --overlay-bg: rgba(22, 16, 42, 0.90);
+
+  /* Keep pastel gradients but slightly warmer for dark */
+  --grad-period: linear-gradient(135deg, #ff7eb9 0%, #d946a8 50%, #7c3aed 100%);
+  --grad-ovulation: linear-gradient(135deg, #e9d5ff 0%, #c084fc 50%, #818cf8 100%);
+  --grad-pms: linear-gradient(135deg, #c4b5fd 0%, #818cf8 100%);
+  --grad-safe: linear-gradient(135deg, #bbf7d0 0%, #6ee7b7 100%);
+  --color-period: #f472b6;
+  --color-ovulation: #c084fc;
+  --color-pms: #a78bfa;
+  --color-safe: #6ee7b7;
+}
+
+/* ─────────────────────────────────────────────
+   CARE MODE OVERRIDES  (both themes)
+───────────────────────────────────────────── */
+[data-care-mode="true"] {
+  --anim-speed-factor: 2.5;
+  --anim-duration-factor: 0.6;
+  --glow-intensity: 0.3;
+  --blur-intensity: 120px;
+  --grad-period: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 50%, #e2e3e5 100%);
+  --grad-ovulation: linear-gradient(135deg, #fefefe 0%, #f8f9fa 50%, #e9ecef 100%);
+  --grad-pms: linear-gradient(135deg, #e7f1ff 0%, #deebff 100%);
+  --grad-safe: linear-gradient(135deg, #f3fcf0 0%, #e8f5e9 100%);
+  --text-main: #6c757d;
+}
+
+/* ─────────────────────────────────────────────
+   SMOOTH TRANSITIONS  — applied to key surfaces
+───────────────────────────────────────────── */
+body,
+.glass,
+.app-container,
+.timeline-card,
+.page-wrapper,
+input,
+textarea,
+button {
+  transition:
+    background-color 0.6s ease,
+    background 0.6s ease,
+    color 0.6s ease,
+    border-color 0.4s ease,
+    box-shadow 0.6s ease,
+    filter 0.6s ease;
+}
+
+/* ─────────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--text-main);
+  background: var(--bg-soft);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: clamp(2rem, 1.5rem + 2.5vw, 3rem);
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.25rem);
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: clamp(1.1rem, 0.95rem + 0.75vw, 1.5rem);
+  line-height: 1.4;
+}
+
+button {
+  font-family: inherit;
+  touch-action: manipulation;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────────────────────
+   GLASS COMPONENT
+───────────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft);
+  border-radius: 32px;
+}
+
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* ─────────────────────────────────────────────
+   LAYOUT
+───────────────────────────────────────────── */
+.app-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 96px);
+  transition: padding 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 1200px;
+    padding: 32px;
+    padding-bottom: 32px;
+    padding-left: 120px;
+    /* Space for desktop side nav */
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.page-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
