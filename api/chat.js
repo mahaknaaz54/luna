@@ -120,9 +120,18 @@ ${cycleEntries.length > 0 ? JSON.stringify(cycleEntries.slice(0, 20), null, 2) :
 
     } catch (err) {
         console.error('Chat error:', err);
+
+        // Detect Gemini rate limit errors and show a friendly message
+        const msg = err.message || String(err);
+        if (msg.includes('429') || msg.includes('quota') || msg.includes('rate')) {
+            return res.status(429).json({
+                reply: "I'm getting a lot of questions right now! Please wait a minute and try again. 🌙"
+            });
+        }
+
         return res.status(500).json({
             reply: "I'm having trouble right now. Please try again in a moment.",
-            debug: err.message || String(err)
+            debug: msg
         });
     }
 }

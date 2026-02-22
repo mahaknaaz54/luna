@@ -59,6 +59,12 @@ const ChatBox = ({ onClose }) => {
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
+                // For rate limits, show the friendly message from the server
+                if (response.status === 429 && errData.reply) {
+                    setMessages(prev => [...prev, { role: 'ai', text: errData.reply }]);
+                    setLoading(false);
+                    return;
+                }
                 const debugInfo = [errData.debug, errData.hint].filter(Boolean).join(' | ');
                 throw new Error(debugInfo || errData.error || 'Failed to get response');
             }
