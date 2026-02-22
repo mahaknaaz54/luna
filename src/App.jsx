@@ -4,6 +4,7 @@ import './App.css';
 
 // Components
 import BottomNav from './components/BottomNav';
+import FloatingBubble from './components/FloatingBubble';
 
 // Pages
 import Home from './pages/Home';
@@ -532,6 +533,9 @@ function AppContent() {
       </motion.div>
 
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+
+      {/* AI Chat Floating Bubble */}
+      <FloatingBubble />
 
       {/* Log Selection Modal integration */}
       <AnimatePresence>
