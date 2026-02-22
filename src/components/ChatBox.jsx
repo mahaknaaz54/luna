@@ -59,7 +59,8 @@ const ChatBox = ({ onClose }) => {
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.debug || errData.error || 'Failed to get response');
+                const debugInfo = [errData.debug, errData.hint].filter(Boolean).join(' | ');
+                throw new Error(debugInfo || errData.error || 'Failed to get response');
             }
 
             const data = await response.json();

@@ -36,14 +36,23 @@ export default async function handler(req, res) {
         // Step 1: Authenticate the user via their Supabase token
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing authorization token.' });
+            return res.status(401).json({ error: 'Missing authorization token.', debug: 'No Bearer token in Authorization header' });
         }
 
         const token = authHeader.split(' ')[1];
+
+        // Log diagnostic info
+        console.log('Auth attempt - token length:', token?.length, 'SUPABASE_URL:', process.env.SUPABASE_URL);
+
         const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
         if (authError || !user) {
-            return res.status(401).json({ error: 'Invalid or expired token.' });
+            console.error('Auth failed:', authError);
+            return res.status(401).json({
+                error: 'Invalid or expired token.',
+                debug: authError?.message || 'No user returned',
+                hint: 'Token length: ' + (token?.length || 0) + ', URL: ' + process.env.SUPABASE_URL
+            });
         }
 
         // Step 2: Extract question and conversation history from request body
