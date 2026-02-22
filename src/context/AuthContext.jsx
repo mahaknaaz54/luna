@@ -33,6 +33,7 @@ export function AuthProvider({ children }) {
 
     const signup = async (email, password, fullName, phone) => {
         // 1. Sign up the user (this creates auth.users entry)
+        // A database trigger (handle_new_user) automatically creates the users_profile row
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -40,20 +41,20 @@ export function AuthProvider({ children }) {
 
         if (error) throw error;
 
-        // 2. Insert into users_profile (if user was created successfully)
+        // 2. Update the auto-created profile with full_name and phone
         if (data?.user) {
-            const { error: profileError } = await supabase.from('users_profile').insert([
-                {
-                    id: data.user.id,
+            // Small delay to let the database trigger finish creating the profile row
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const { error: profileError } = await supabase.from('users_profile')
+                .update({
                     full_name: fullName,
-                    email: email,
                     phone: phone,
-                }
-            ]);
+                })
+                .eq('id', data.user.id);
 
             if (profileError) {
-                console.error("Error creating user profile:", profileError);
-                // Depending on requirements we might want to throw here, but signup succeeded.
+                console.error("Error updating user profile:", profileError);
             }
         }
         return data;
