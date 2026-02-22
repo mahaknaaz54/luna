@@ -111,6 +111,9 @@ ${cycleEntries.length > 0 ? JSON.stringify(cycleEntries.slice(0, 20), null, 2) :
 
     } catch (err) {
         console.error('Chat error:', err);
-        return res.status(500).json({ reply: "I'm having trouble right now. Please try again in a moment." });
+        return res.status(500).json({
+            reply: "I'm having trouble right now. Please try again in a moment.",
+            debug: err.message || String(err)
+        });
     }
 }

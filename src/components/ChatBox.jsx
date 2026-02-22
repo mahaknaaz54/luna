@@ -58,14 +58,15 @@ const ChatBox = ({ onClose }) => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to get response');
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.debug || errData.error || 'Failed to get response');
             }
 
             const data = await response.json();
             setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
         } catch (err) {
             console.error('Chat error:', err);
-            setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I couldn\'t process that. Please try again.' }]);
+            setMessages(prev => [...prev, { role: 'ai', text: `Error: ${err.message}` }]);
         } finally {
             setLoading(false);
         }
