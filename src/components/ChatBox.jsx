@@ -1,14 +1,11 @@
 // src/components/ChatBox.jsx
-// The chat modal UI: displays messages, handles input, calls the backend /chat endpoint.
+// The chat modal UI: displays messages, handles input, calls the /api/chat serverless function.
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-
-// Backend URL — update for production
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const ChatBox = ({ onClose }) => {
     // Chat message history: [{ role: 'user' | 'ai', text: '...' }]
@@ -25,7 +22,7 @@ const ChatBox = ({ onClose }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, loading]);
 
-    // Send message to the backend /chat endpoint
+    // Send message to the /api/chat serverless function
     const handleSend = async () => {
         const question = input.trim();
         if (!question || loading) return;
@@ -36,7 +33,7 @@ const ChatBox = ({ onClose }) => {
         setLoading(true);
 
         try {
-            // Get the auth token for the backend
+            // Get the auth token
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             if (!currentSession) {
                 setMessages(prev => [...prev, { role: 'ai', text: 'You need to be logged in to use the AI assistant.' }]);
@@ -50,8 +47,8 @@ const ChatBox = ({ onClose }) => {
                 text: m.text
             }));
 
-            // Call the backend /chat endpoint
-            const response = await fetch(`${API_URL}/chat`, {
+            // Call the Vercel serverless function (same domain, no CORS)
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
