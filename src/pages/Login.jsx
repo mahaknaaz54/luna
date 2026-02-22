@@ -14,15 +14,25 @@ const Login = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccessMsg(null);
 
         try {
             if (isSignUp) {
-                await signup(email, password, fullName, phone);
+                const data = await signup(email, password, fullName, phone);
+                // If email confirmation is required, user won't be auto-logged in
+                if (data?.user && !data?.session) {
+                    setSuccessMsg('Account created! Please check your email to confirm your account, then log in.');
+                    setIsSignUp(false);
+                } else if (data?.session) {
+                    // Auto-login happened (email confirmation disabled in Supabase)
+                    setSuccessMsg('Account created! Logging you in...');
+                }
             } else {
                 await login(email, password);
             }
@@ -176,6 +186,16 @@ const Login = () => {
                             style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '4px', background: 'rgba(231, 76, 60, 0.1)', padding: '8px', borderRadius: '8px' }}
                         >
                             {error}
+                        </motion.div>
+                    )}
+
+                    {successMsg && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            style={{ color: '#27ae60', fontSize: '0.85rem', marginTop: '4px', background: 'rgba(39, 174, 96, 0.1)', padding: '12px', borderRadius: '8px', fontWeight: 500 }}
+                        >
+                            {successMsg}
                         </motion.div>
                     )}
 
