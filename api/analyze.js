@@ -5,19 +5,33 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// --- Initialize Supabase Admin Client ---
-const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// --- Validate required environment variables ---
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'GEMINI_API_KEY'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
 
-// --- Initialize Gemini ---
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// --- Initialize clients (only if env vars are present) ---
+const supabaseAdmin = !missingVars.includes('SUPABASE_URL') && !missingVars.includes('SUPABASE_SERVICE_ROLE_KEY')
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    : null;
+
+const genAI = process.env.GEMINI_API_KEY
+    ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    : null;
 
 export default async function handler(req, res) {
     // Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // --- Check for missing env vars early ---
+    if (missingVars.length > 0) {
+        console.error('Missing environment variables:', missingVars.join(', '));
+        return res.status(500).json({
+            summary: "Luna AI is not configured yet. Missing server environment variables: " + missingVars.join(', '),
+            patterns: ['Please set them in Vercel Dashboard → Settings → Environment Variables.'],
+            recommendations: ['Add SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and GEMINI_API_KEY.']
+        });
     }
 
     try {
