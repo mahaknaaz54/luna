@@ -500,7 +500,7 @@ function AppContent() {
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'white',
+              background: 'var(--bg-page)',
               zIndex: 9999,
               display: 'flex',
               alignItems: 'center',
@@ -568,8 +568,8 @@ function AppContent() {
                 borderRadius: '40px',
                 textAlign: 'center',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-                border: '1px solid rgba(255,255,255,0.4)',
-                background: 'rgba(255,255,255,0.7)'
+                border: '1px solid var(--glass-border)',
+                background: 'var(--overlay-bg)'
               }}
             >
               <header style={{ marginBottom: '24px' }}>
@@ -608,8 +608,8 @@ function AppContent() {
                     style={{
                       padding: '8px 16px',
                       borderRadius: '20px',
-                      border: '1px solid rgba(0,0,0,0.1)',
-                      background: selectedSymptoms.includes(symp) ? 'var(--grad-period)' : 'rgba(255,255,255,0.5)',
+                      border: '1px solid var(--border-subtle)',
+                      background: selectedSymptoms.includes(symp) ? 'var(--grad-period)' : 'var(--glass-bg)',
                       color: selectedSymptoms.includes(symp) ? 'white' : 'var(--text-main)',
                       fontSize: '0.85rem',
                       fontWeight: 600,
@@ -630,11 +630,11 @@ function AppContent() {
                   width: '100%',
                   height: '100px',
                   borderRadius: '24px',
-                  border: '1px solid rgba(0,0,0,0.05)',
+                  border: '1px solid var(--border-subtle)',
                   padding: '16px',
                   fontSize: '0.95rem',
                   fontFamily: 'inherit',
-                  background: 'rgba(255,255,255,0.3)',
+                  background: 'var(--input-bg)',
                   marginBottom: '24px',
                   outline: 'none',
                   resize: 'none'
@@ -661,7 +661,7 @@ function AppContent() {
 
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  style={{ padding: '16px', border: 'none', borderRadius: '20px', cursor: 'pointer', color: 'var(--text-main)', background: 'rgba(0,0,0,0.05)', fontWeight: 600, fontSize: '0.9rem' }}
+                  style={{ padding: '16px', border: 'none', borderRadius: '20px', cursor: 'pointer', color: 'var(--text-main)', background: 'var(--border-subtle)', fontWeight: 600, fontSize: '0.9rem' }}
                   onClick={() => handleLogAction(logDate, 'save')}
                 >
                   Done

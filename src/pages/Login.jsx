@@ -54,7 +54,7 @@ const Login = () => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)',
+                background: 'var(--bg-page)',
                 padding: '24px',
                 textAlign: 'center',
                 position: 'relative',
@@ -85,7 +85,7 @@ const Login = () => {
                     <Moon size={40} fill="white" />
                 </div>
                 <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>Luna</h1>
-                <p style={{ fontSize: '1rem', opacity: 0.6, fontWeight: 500 }}>
+                <p style={{ fontSize: '1rem', color: 'var(--text-soft)', fontWeight: 500 }}>
                     {isSignUp ? 'Create your account' : 'Welcome back'}
                 </p>
             </motion.div>
@@ -117,8 +117,9 @@ const Login = () => {
                                         width: '100%',
                                         padding: '16px',
                                         borderRadius: '16px',
-                                        border: '1px solid rgba(0,0,0,0.05)',
-                                        background: 'rgba(255,255,255,0.6)',
+                                        border: '1px solid var(--divider)',
+                                        background: 'var(--input-bg)',
+                                        color: 'var(--text-main)',
                                         fontSize: '1rem',
                                         outline: 'none',
                                         boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
@@ -133,8 +134,9 @@ const Login = () => {
                                         width: '100%',
                                         padding: '16px',
                                         borderRadius: '16px',
-                                        border: '1px solid rgba(0,0,0,0.05)',
-                                        background: 'rgba(255,255,255,0.6)',
+                                        border: '1px solid var(--divider)',
+                                        background: 'var(--input-bg)',
+                                        color: 'var(--text-main)',
                                         fontSize: '1rem',
                                         outline: 'none',
                                         boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
@@ -154,8 +156,9 @@ const Login = () => {
                             width: '100%',
                             padding: '16px',
                             borderRadius: '16px',
-                            border: '1px solid rgba(0,0,0,0.05)',
-                            background: 'rgba(255,255,255,0.6)',
+                            border: '1px solid var(--divider)',
+                            background: 'var(--input-bg)',
+                            color: 'var(--text-main)',
                             fontSize: '1rem',
                             outline: 'none',
                             boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
@@ -171,8 +174,9 @@ const Login = () => {
                             width: '100%',
                             padding: '16px',
                             borderRadius: '16px',
-                            border: '1px solid rgba(0,0,0,0.05)',
-                            background: 'rgba(255,255,255,0.6)',
+                            border: '1px solid var(--divider)',
+                            background: 'var(--input-bg)',
+                            color: 'var(--text-main)',
                             fontSize: '1rem',
                             outline: 'none',
                             boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
@@ -225,7 +229,7 @@ const Login = () => {
                 </form>
 
                 <div style={{ marginTop: '24px' }}>
-                    <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-soft)' }}>
                         {isSignUp ? 'Already have an account?' : "Don't have an account?"}
                     </p>
                     <button
@@ -233,7 +237,7 @@ const Login = () => {
                         style={{
                             background: 'none',
                             border: 'none',
-                            color: 'var(--text-main)',
+                            color: 'var(--color-pms)',
                             fontWeight: 600,
                             fontSize: '0.95rem',
                             marginTop: '8px',

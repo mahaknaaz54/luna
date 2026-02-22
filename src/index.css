@@ -22,9 +22,9 @@
   --glass-bg: rgba(255, 255, 255, 0.50);
   --glass-border: rgba(255, 255, 255, 0.35);
   --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
-  --text-main: #3d3347;
-  --text-soft: #8e8e8e;
-  --text-muted: rgba(61, 51, 71, 0.45);
+  --text-main: #2d2438;
+  --text-soft: #666072;
+  --text-muted: rgba(61, 51, 71, 0.6);
   --card-bg: rgba(255, 255, 255, 0.55);
   --input-bg: rgba(255, 255, 255, 0.35);
   --divider: rgba(0, 0, 0, 0.06);
@@ -32,6 +32,9 @@
   --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.07);
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
   --overlay-bg: rgba(255, 255, 255, 0.80);
+  --bg-elevated: rgba(255, 255, 255, 0.97);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --bg-subtle: rgba(0, 0, 0, 0.03);
 
   /* Care Mode Timing */
   --anim-speed-factor: 1;
@@ -47,9 +50,9 @@
   --bg-page: #fffafa;
   --glass-bg: rgba(255, 255, 255, 0.50);
   --glass-border: rgba(255, 255, 255, 0.35);
-  --text-main: #3d3347;
-  --text-soft: #8e8e8e;
-  --text-muted: rgba(61, 51, 71, 0.45);
+  --text-main: #2d2438;
+  --text-soft: #666072;
+  --text-muted: rgba(61, 51, 71, 0.6);
   --card-bg: rgba(255, 255, 255, 0.55);
   --input-bg: rgba(255, 255, 255, 0.35);
   --divider: rgba(0, 0, 0, 0.06);
@@ -57,6 +60,9 @@
   --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.07);
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
   --overlay-bg: rgba(255, 255, 255, 0.80);
+  --bg-elevated: rgba(255, 255, 255, 0.97);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --bg-subtle: rgba(0, 0, 0, 0.03);
 }
 
 /* ─────────────────────────────────────────────
@@ -77,6 +83,9 @@
   --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.35);
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
   --overlay-bg: rgba(22, 16, 42, 0.90);
+  --bg-elevated: rgba(30, 20, 50, 0.97);
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --bg-subtle: rgba(255, 255, 255, 0.05);
 
   /* Keep pastel gradients but slightly warmer for dark */
   --grad-period: linear-gradient(135deg, #ff7eb9 0%, #d946a8 50%, #7c3aed 100%);
@@ -143,6 +152,19 @@ body {
   -webkit-font-smoothing: antialiased;
   font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
   line-height: 1.5;
+}
+
+input,
+textarea,
+select {
+  color: var(--text-main);
+  background: var(--input-bg);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-soft);
+  opacity: 1;
 }
 
 h1 {

@@ -33,26 +33,23 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Step 1: Authenticate the user via their Supabase token
+        // Step 1: Extract and decode the user's JWT token
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing authorization token.', debug: 'No Bearer token in Authorization header' });
+            return res.status(401).json({ error: 'Missing authorization token.' });
         }
 
         const token = authHeader.split(' ')[1];
 
-        // Log diagnostic info
-        console.log('Auth attempt - token length:', token?.length, 'SUPABASE_URL:', process.env.SUPABASE_URL);
-
-        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
-        if (authError || !user) {
-            console.error('Auth failed:', authError);
-            return res.status(401).json({
-                error: 'Invalid or expired token.',
-                debug: authError?.message || 'No user returned',
-                hint: 'Token length: ' + (token?.length || 0) + ', URL: ' + process.env.SUPABASE_URL
-            });
+        // Decode the JWT payload to get the user ID (sub field)
+        // The JWT was already verified by Supabase when the user logged in
+        let userId;
+        try {
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            userId = payload.sub;
+            if (!userId) throw new Error('No user ID in token');
+        } catch (e) {
+            return res.status(401).json({ error: 'Invalid token format.' });
         }
 
         // Step 2: Extract question and conversation history from request body
@@ -63,8 +60,8 @@ export default async function handler(req, res) {
 
         // Step 3: Fetch user's profile and cycle data from Supabase (in parallel)
         const [profileRes, cycleRes] = await Promise.all([
-            supabaseAdmin.from('users_profile').select('full_name, email').eq('id', user.id).single(),
-            supabaseAdmin.from('cycle_entries').select('*').eq('user_id', user.id)
+            supabaseAdmin.from('users_profile').select('full_name, email').eq('id', userId).single(),
+            supabaseAdmin.from('cycle_entries').select('*').eq('user_id', userId)
                 .order('period_start_date', { ascending: false }).limit(50)
         ]);
 

@@ -76,7 +76,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                 <section className="glass" style={{ padding: '24px', borderRadius: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ color: 'var(--color-pms)', background: 'rgba(0,0,0,0.03)', padding: '10px', borderRadius: '16px' }}>
+                            <div style={{ color: 'var(--color-pms)', background: 'var(--bg-subtle)', padding: '10px', borderRadius: '16px' }}>
                                 <Fingerprint size={22} />
                             </div>
                             <div>
@@ -118,7 +118,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                 <section className="glass" style={{ padding: '24px', borderRadius: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ color: 'var(--color-safe)', background: 'rgba(0,0,0,0.03)', padding: '10px', borderRadius: '16px' }}>
+                            <div style={{ color: 'var(--color-safe)', background: 'var(--bg-subtle)', padding: '10px', borderRadius: '16px' }}>
                                 <Download size={22} />
                             </div>
                             <div>
@@ -131,7 +131,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                             whileTap={{ scale: 0.95 }}
                             onClick={handleExport}
                             style={{
-                                background: 'rgba(0,0,0,0.05)',
+                                background: 'var(--border-subtle)',
                                 border: 'none',
                                 padding: '10px 16px',
                                 borderRadius: '16px',
@@ -241,7 +241,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                                 textAlign: 'center',
                                 boxShadow: '0 30px 60px rgba(0,0,0,0.2)',
                                 border: '1px solid rgba(255,255,255,0.4)',
-                                background: 'rgba(255,255,255,0.8)',
+                                background: 'var(--overlay-bg)',
                                 perspective: '1000px'
                             }}
                         >
@@ -288,7 +288,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                                     onClick={() => setIsDeleteModalOpen(false)}
                                     style={{
                                         padding: '16px',
-                                        background: 'rgba(0,0,0,0.05)',
+                                        background: 'var(--border-subtle)',
                                         color: 'var(--text-main)',
                                         border: 'none',
                                         borderRadius: '20px',

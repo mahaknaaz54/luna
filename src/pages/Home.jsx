@@ -65,7 +65,7 @@ const Home = ({ data, phase, currentDay, cycleLength, isCareMode }) => {
                             borderRadius: '24px',
                             marginBottom: '24px',
                             border: '1px solid var(--color-pms)',
-                            background: 'rgba(255,255,255,0.2)',
+                            background: 'var(--glass-bg)',
                             textAlign: 'center'
                         }}
                     >

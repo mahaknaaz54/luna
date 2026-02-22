@@ -273,7 +273,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                         style={{
                             position: 'fixed',
                             inset: 0,
-                            background: 'rgba(0,0,0,0.2)',
+                            background: 'var(--overlay-bg)',
                             backdropFilter: 'blur(10px)',
                             display: 'flex',
                             alignItems: 'center',
@@ -317,7 +317,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                                     padding: '16px 20px',
                                     borderRadius: '20px',
                                     border: '1px solid rgba(0,0,0,0.05)',
-                                    background: 'rgba(255,255,255,0.5)',
+                                    background: 'var(--input-bg)',
                                     fontSize: '1rem',
                                     outline: 'none',
                                     fontFamily: 'inherit'

@@ -95,7 +95,7 @@ const BottomNav = ({ activeTab, onTabChange }) => {
                     height: '56px',
                     borderRadius: '50%',
                     background: 'var(--grad-period)',
-                    border: '4px solid white',
+                    border: '4px solid var(--glass-border)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
