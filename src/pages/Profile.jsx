@@ -1,21 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, LogOut, Phone, Mail, Shield, Edit2, X, Check } from 'lucide-react';
 import { useCareMode } from '../context/CareModeContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient';
 
-const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
+const Profile = ({ onNavigate, onLogout }) => {
     const { isCareMode, setIsCareMode } = useCareMode();
-    const [editingField, setEditingField] = useState(null); // 'phone' or 'email'
+    const { user } = useAuth();
+
+    const [profileData, setProfileData] = useState({
+        full_name: 'Loading...',
+        email: 'Loading...',
+        phone: 'Loading...'
+    });
+
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    const [editingField, setEditingField] = useState(null); // 'phone' or 'email' or 'full_name'
     const [tempValue, setTempValue] = useState('');
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (!user) return;
+            try {
+                const { data, error } = await supabase
+                    .from('users_profile')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error("Error fetching profile:", error);
+                } else if (data) {
+                    setProfileData(data);
+                }
+            } catch (err) {
+                console.error("Unexpected error fetching profile:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [user]);
 
     const handleEdit = (field) => {
         setEditingField(field);
-        setTempValue(userInfo?.[field] || (field === 'phone' ? '+1 234 567 890' : 'luna.user@example.com'));
+        setTempValue(profileData?.[field] || '');
     };
 
-    const handleSave = () => {
-        setUserInfo({ ...userInfo, [editingField]: tempValue });
-        setEditingField(null);
+    const handleSave = async () => {
+        if (!user) return;
+        setSaving(true);
+        try {
+            const updates = { [editingField]: tempValue };
+
+            const { error } = await supabase
+                .from('users_profile')
+                .update(updates)
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            setProfileData(prev => ({ ...prev, ...updates }));
+            setEditingField(null);
+        } catch (err) {
+            console.error("Error updating profile:", err);
+            alert("Failed to save changes.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -45,7 +101,19 @@ const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
                 >
                     👤
                 </motion.div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--text-main)' }}>{userInfo?.name || 'Luna User'}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <h2 style={{ fontSize: '2rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                        {profileData?.full_name || 'Luna User'}
+                    </h2>
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleEdit('full_name')}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', opacity: 0.4 }}
+                    >
+                        <Edit2 size={16} />
+                    </motion.button>
+                </div>
                 <p style={{ fontSize: '0.95rem', opacity: 0.5, fontWeight: 500 }}>Premium Member ✨</p>
             </header>
 
@@ -56,7 +124,7 @@ const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
                             <div style={{ color: 'var(--color-pms)', opacity: 0.7 }}><Phone size={20} /></div>
                             <div>
                                 <span style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Phone Number</span>
-                                <span style={{ fontSize: '1rem', fontWeight: 500 }}>{userInfo?.phone || '+1 234 567 890'}</span>
+                                <span style={{ fontSize: '1rem', fontWeight: 500 }}>{profileData?.phone || 'Not provided'}</span>
                             </div>
                         </div>
                         <motion.button
@@ -73,7 +141,7 @@ const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
                             <div style={{ color: 'var(--color-pms)', opacity: 0.7 }}><Mail size={20} /></div>
                             <div>
                                 <span style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Email Address</span>
-                                <span style={{ fontSize: '1rem', fontWeight: 500 }}>{userInfo?.email || 'luna.user@example.com'}</span>
+                                <span style={{ fontSize: '1rem', fontWeight: 500 }}>{profileData?.email || 'Not provided'}</span>
                             </div>
                         </div>
                         <motion.button
@@ -233,13 +301,15 @@ const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
                             }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Edit {editingField === 'phone' ? 'Phone' : 'Email'}</h3>
+                                <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+                                    Edit {editingField === 'full_name' ? 'Name' : editingField === 'phone' ? 'Phone' : 'Email'}
+                                </h3>
                                 <button onClick={() => setEditingField(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}><X size={20} /></button>
                             </div>
 
                             <input
                                 autoFocus
-                                type={editingField === 'phone' ? 'tel' : 'email'}
+                                type={editingField === 'phone' ? 'tel' : editingField === 'email' ? 'email' : 'text'}
                                 value={tempValue}
                                 onChange={(e) => setTempValue(e.target.value)}
                                 style={{
@@ -258,6 +328,7 @@ const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleSave}
+                                disabled={saving}
                                 style={{
                                     width: '100%',
                                     padding: '16px',
@@ -267,14 +338,15 @@ const Profile = ({ userInfo, setUserInfo, onNavigate, onLogout }) => {
                                     color: 'white',
                                     fontWeight: 600,
                                     fontSize: '1rem',
-                                    cursor: 'pointer',
+                                    cursor: saving ? 'not-allowed' : 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: '8px'
+                                    gap: '8px',
+                                    opacity: saving ? 0.7 : 1
                                 }}
                             >
-                                <Check size={18} /> Save Changes
+                                {saving ? 'Saving...' : <><Check size={18} /> Save Changes</>}
                             </motion.button>
                         </motion.div>
                     </motion.div>

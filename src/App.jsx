@@ -14,10 +14,10 @@ import Settings from './pages/Settings';
 import PrivacySecurity from './pages/PrivacySecurity';
 import Login from './pages/Login';
 
-// New Phase Background Component
 import PhaseBackground from './components/PhaseBackground';
 import { CareModeProvider, useCareMode } from './context/CareModeContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Smooth full-page crossfade overlay when theme switches
 function ThemeFadeOverlay() {
@@ -49,30 +49,26 @@ const VALID_THEMES = ['Auto', 'Light', 'Soft Dark'];
 /** Default settings used when localStorage is absent or corrupt. */
 const DEFAULT_SETTINGS = { notifications: true, cycleLength: 28, reminderTime: '09:00', theme: 'Auto' };
 
+import { supabase } from './supabaseClient';
+
 function AppContent() {
   const tabs = ['home', 'insights', 'history', 'profile', 'settings'];
   const [activeTab, setActiveTab] = useState('home');
   const [direction, setDirection] = useState(0);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('luna-is-logged-in') === 'true';
-  });
-
+  const { user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogin = () => {
-    localStorage.setItem('luna-is-logged-in', 'true');
-    setIsLoggedIn(true);
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
-    setTimeout(() => {
-      localStorage.clear();
-      setIsLoggedIn(false);
+    try {
+      await logout();
+    } catch (err) {
+      console.error(err);
+    } finally {
       setIsLoggingOut(false);
       setActiveTab('home');
-    }, 800);
+    }
   };
 
   const formatDate = (date) => {
@@ -82,14 +78,7 @@ function AppContent() {
 
   const { isCareMode } = useCareMode();
 
-  const [symptomLogs, setSymptomLogs] = useState(() => {
-    const saved = localStorage.getItem('luna-symptom-logs');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  useEffect(() => {
-    localStorage.setItem('luna-symptom-logs', JSON.stringify(symptomLogs));
-  }, [symptomLogs]);
+  const [symptomLogs, setSymptomLogs] = useState({});
 
   const [settings, setSettings] = useState(() => {
     try {
@@ -109,30 +98,22 @@ function AppContent() {
     window.dispatchEvent(new Event('luna-settings-change'));
   }, [settings]);
 
-  const [userInfo, setUserInfo] = useState(() => {
-    const saved = localStorage.getItem('luna-user-info');
-    return saved ? JSON.parse(saved) : {
-      name: "Luna User",
-      email: "luna.user@example.com",
-      phone: "+1 234 567 890"
-    };
-  });
 
-  useEffect(() => {
-    localStorage.setItem('luna-user-info', JSON.stringify(userInfo));
-  }, [userInfo]);
 
   const [selectedEmoji, setSelectedEmoji] = useState(null);
   const [comment, setComment] = useState('');
+  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
 
   const updateLogDate = (date) => {
     setLogDate(date);
     if (date && symptomLogs[date]) {
       setSelectedEmoji(symptomLogs[date].emoji);
       setComment(symptomLogs[date].comment || '');
+      setSelectedSymptoms(symptomLogs[date].symptoms || []);
     } else {
       setSelectedEmoji(null);
       setComment('');
+      setSelectedSymptoms([]);
     }
   };
 
@@ -152,11 +133,88 @@ function AppContent() {
   const [logDate, setLogDate] = useState(null);
 
   const [cycleData, setCycleData] = useState({
-    periodDays: ['2026-02-08', '2026-02-09', '2026-02-10', '2026-02-11', '2026-02-12'],
-    startMarkers: ['2026-02-08'],
-    endMarkers: ['2026-02-12'],
-    cycleLength: settings.cycleLength
+    periodDays: [],
+    startMarkers: [],
+    endMarkers: [],
+    cycleLength: settings?.cycleLength || 28
   });
+
+  const [cycleEntries, setCycleEntries] = useState([]);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    const fetchCycleData = async () => {
+      if (!user) return;
+      const { data, error } = await supabase.from('cycle_entries').select('*').eq('user_id', user.id).order('period_start_date', { ascending: false });
+      if (error) {
+        console.error("Error fetching cycle entries:", error);
+        return;
+      }
+
+      setCycleEntries(data);
+
+      const newSymptomLogs = {};
+      const newPeriodDays = [];
+      const newStartMarkers = [];
+      const newEndMarkers = [];
+
+      data.forEach(entry => {
+        const d = entry.period_start_date;
+        if (entry.mood || entry.notes || (entry.symptoms && entry.symptoms.length > 0)) {
+          newSymptomLogs[d] = {
+            emoji: entry.mood,
+            comment: entry.notes,
+            symptoms: entry.symptoms || []
+          };
+        }
+        if (entry.phase === 'period_start') {
+          newStartMarkers.push(d);
+          newPeriodDays.push(d);
+        } else if (entry.phase === 'period_end') {
+          newEndMarkers.push(d);
+          newPeriodDays.push(d);
+        } else if (entry.phase === 'period') {
+          newPeriodDays.push(d);
+        }
+      });
+
+      // Auto-fill logic reconstruction based on fetched markers
+      const finalPeriodDays = new Set([...newPeriodDays]);
+      newStartMarkers.sort().forEach(startD => {
+        const nextEnd = newEndMarkers.filter(d => d >= startD).sort()[0];
+        if (nextEnd) {
+          let curr = new Date(startD.replace(/-/g, '/'));
+          const end = new Date(nextEnd.replace(/-/g, '/'));
+          let count = 0;
+          while (curr <= end && count < 10) {
+            finalPeriodDays.add(formatDate(curr));
+            curr.setDate(curr.getDate() + 1);
+            count++;
+          }
+        }
+      });
+
+      setSymptomLogs(newSymptomLogs);
+      setCycleData(prev => ({
+        ...prev,
+        periodDays: Array.from(finalPeriodDays),
+        startMarkers: newStartMarkers,
+        endMarkers: newEndMarkers
+      }));
+    };
+
+    fetchCycleData();
+  }, [user, refreshTick]);
+
+  const handleDeleteEntry = async (id) => {
+    if (!user) return;
+    try {
+      await supabase.from('cycle_entries').delete().eq('id', id);
+      setRefreshTick(prev => prev + 1);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     setCycleData(prev => ({ ...prev, cycleLength: settings.cycleLength }));
@@ -221,75 +279,110 @@ function AppContent() {
 
   const phaseData = getPhaseData();
 
-  const handleLogAction = (date, action) => {
-    setCycleData(prev => {
-      let nextPeriodDays = [...prev.periodDays];
-      let nextStartMarkers = [...prev.startMarkers];
-      let nextEndMarkers = [...prev.endMarkers];
+  const saveToSupabase = async (date, updates) => {
+    if (!user) return;
+    try {
+      const { data: existing } = await supabase
+        .from('cycle_entries')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('period_start_date', date)
+        .single();
 
-      if (action === 'toggle') {
-        if (nextPeriodDays.includes(date)) {
-          nextPeriodDays = nextPeriodDays.filter(d => d !== date);
-          nextStartMarkers = nextStartMarkers.filter(d => d !== date);
-          nextEndMarkers = nextEndMarkers.filter(d => d !== date);
-        } else {
-          nextPeriodDays.push(date);
-        }
-      } else if (action === 'started') {
-        if (!nextStartMarkers.includes(date)) {
-          nextStartMarkers.push(date);
-          nextPeriodDays.push(date);
-          const nextEnd = nextEndMarkers.filter(d => d > date).sort()[0];
-          if (nextEnd) {
-            let curr = new Date(date.replace(/-/g, '/'));
-            const end = new Date(nextEnd.replace(/-/g, '/'));
-            let count = 0;
-            while (curr < end && count < 10) {
-              curr.setDate(curr.getDate() + 1);
-              const dStr = formatDate(curr);
-              if (!nextPeriodDays.includes(dStr)) nextPeriodDays.push(dStr);
-              count++;
-            }
-          }
-        } else {
-          nextStartMarkers = nextStartMarkers.filter(d => d !== date);
-        }
-      } else if (action === 'ended') {
-        if (!nextEndMarkers.includes(date)) {
-          nextEndMarkers.push(date);
-          nextPeriodDays.push(date);
-          // Auto-fill between previous start and this end (max 10 days)
-          const prevStart = nextStartMarkers.filter(d => d < date).sort().reverse()[0];
-          if (prevStart) {
-            let curr = new Date(prevStart.replace(/-/g, '/'));
-            const end = new Date(date.replace(/-/g, '/'));
-            let count = 0;
-            while (curr < end && count < 10) {
-              curr.setDate(curr.getDate() + 1);
-              const dStr = formatDate(curr);
-              if (!nextPeriodDays.includes(dStr)) nextPeriodDays.push(dStr);
-              count++;
-            }
-          }
-        } else {
-          nextEndMarkers = nextEndMarkers.filter(d => d !== date);
-        }
+      if (existing) {
+        await supabase.from('cycle_entries').update(updates).eq('id', existing.id);
+      } else {
+        await supabase.from('cycle_entries').insert({
+          user_id: user.id,
+          period_start_date: date,
+          cycle_length: settings.cycleLength || 28,
+          ...updates
+        });
       }
+    } catch (err) {
+      console.error("Error saving to supabase:", err);
+    }
+  };
 
-      return {
-        ...prev,
-        periodDays: [...new Set(nextPeriodDays)],
-        startMarkers: nextStartMarkers,
-        endMarkers: nextEndMarkers
-      };
-    });
+  const handleLogAction = async (date, action) => {
+    let phaseUpdate = null;
+    let nextPeriodDays = [...cycleData.periodDays];
+    let nextStartMarkers = [...cycleData.startMarkers];
+    let nextEndMarkers = [...cycleData.endMarkers];
+
+    if (action === 'toggle') {
+      if (nextPeriodDays.includes(date)) {
+        nextPeriodDays = nextPeriodDays.filter(d => d !== date);
+        nextStartMarkers = nextStartMarkers.filter(d => d !== date);
+        nextEndMarkers = nextEndMarkers.filter(d => d !== date);
+        phaseUpdate = 'safe'; // Treat as clearing phase or setting safe
+      } else {
+        nextPeriodDays.push(date);
+        phaseUpdate = 'period';
+      }
+    } else if (action === 'started') {
+      if (!nextStartMarkers.includes(date)) {
+        nextStartMarkers.push(date);
+        nextPeriodDays.push(date);
+        phaseUpdate = 'period_start';
+        const nextEnd = nextEndMarkers.filter(d => d > date).sort()[0];
+        if (nextEnd) {
+          let curr = new Date(date.replace(/-/g, '/'));
+          const end = new Date(nextEnd.replace(/-/g, '/'));
+          let count = 0;
+          while (curr < end && count < 10) {
+            curr.setDate(curr.getDate() + 1);
+            const dStr = formatDate(curr);
+            if (!nextPeriodDays.includes(dStr)) nextPeriodDays.push(dStr);
+            count++;
+          }
+        }
+      } else {
+        nextStartMarkers = nextStartMarkers.filter(d => d !== date);
+        phaseUpdate = 'safe';
+      }
+    } else if (action === 'ended') {
+      if (!nextEndMarkers.includes(date)) {
+        nextEndMarkers.push(date);
+        nextPeriodDays.push(date);
+        phaseUpdate = 'period_end';
+        const prevStart = nextStartMarkers.filter(d => d < date).sort().reverse()[0];
+        if (prevStart) {
+          let curr = new Date(prevStart.replace(/-/g, '/'));
+          const end = new Date(date.replace(/-/g, '/'));
+          let count = 0;
+          while (curr < end && count < 10) {
+            curr.setDate(curr.getDate() + 1);
+            const dStr = formatDate(curr);
+            if (!nextPeriodDays.includes(dStr)) nextPeriodDays.push(dStr);
+            count++;
+          }
+        }
+      } else {
+        nextEndMarkers = nextEndMarkers.filter(d => d !== date);
+        phaseUpdate = 'safe';
+      }
+    }
+
+    // Set local state
+    setCycleData(prev => ({
+      ...prev,
+      periodDays: [...new Set(nextPeriodDays)],
+      startMarkers: nextStartMarkers,
+      endMarkers: nextEndMarkers
+    }));
 
     if (action === 'save') {
       setSymptomLogs(prev => ({
         ...prev,
-        [date]: { emoji: selectedEmoji, comment: comment }
+        [date]: { emoji: selectedEmoji, comment: comment, symptoms: selectedSymptoms }
       }));
+      await saveToSupabase(date, { mood: selectedEmoji, notes: comment, symptoms: selectedSymptoms });
+    } else {
+      await saveToSupabase(date, { phase: phaseUpdate });
     }
+
+    setRefreshTick(prev => prev + 1); // trigger re-fetch
     setLogDate(null);
   };
 
@@ -346,14 +439,15 @@ function AppContent() {
             phase={phase}
             symptomLogs={symptomLogs}
             calculatePhase={calculatePhase}
+            cycleEntries={cycleEntries}
           />
         );
         break;
       case 'history':
-        content = <History onSelectMonth={navigateToMonth} />;
+        content = <History cycleEntries={cycleEntries} onDeleteEntry={handleDeleteEntry} onSelectMonth={navigateToMonth} />;
         break;
       case 'profile':
-        content = <Profile userInfo={userInfo} setUserInfo={setUserInfo} onNavigate={handleTabChange} onLogout={handleLogout} />;
+        content = <Profile onNavigate={handleTabChange} onLogout={handleLogout} />;
         break;
       case 'privacy-security':
         content = (
@@ -386,10 +480,10 @@ function AppContent() {
     );
   };
 
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <AnimatePresence>
-        <Login onLogin={handleLogin} key="login-page" />
+        <Login key="login-page" />
       </AnimatePresence>
     );
   }
@@ -479,7 +573,7 @@ function AppContent() {
                 <p style={{ fontSize: '0.9rem', opacity: 0.5 }}>{logDate}</p>
               </header>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
                 {['😊', '😔', '🩸', '⚡', '☁️', '🌸'].map(emoji => (
                   <motion.button
                     key={emoji}
@@ -501,8 +595,31 @@ function AppContent() {
                 ))}
               </div>
 
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+                {['Cramps', 'Headache', 'Bloating', 'Fatigue', 'Acne', 'Cravings'].map(symp => (
+                  <motion.button
+                    key={symp}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedSymptoms(prev => prev.includes(symp) ? prev.filter(s => s !== symp) : [...prev, symp])}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      background: selectedSymptoms.includes(symp) ? 'var(--grad-period)' : 'rgba(255,255,255,0.5)',
+                      color: selectedSymptoms.includes(symp) ? 'white' : 'var(--text-main)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {symp}
+                  </motion.button>
+                ))}
+              </div>
+
               <textarea
-                placeholder="Add a comment or log your symptoms..."
+                placeholder="Add a comment or notes..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 style={{
@@ -556,9 +673,11 @@ function AppContent() {
 
 function App() {
   return (
-    <CareModeProvider>
-      <AppContentWrapper />
-    </CareModeProvider>
+    <AuthProvider>
+      <CareModeProvider>
+        <AppContentWrapper />
+      </CareModeProvider>
+    </AuthProvider>
   );
 }
 

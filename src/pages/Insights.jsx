@@ -1,13 +1,64 @@
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import HeatmapCalendar from '../components/HeatmapCalendar';
 import InsightCard from '../components/InsightCard';
 
-const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, symptomLogs, calculatePhase }) => {
-    const mockInsights = [
-        { id: 1, text: "You usually feel low energy 2 days before your period.", icon: "⚡" },
-        { id: 2, text: "Your ovulation phase averages 4 days.", icon: "✨" },
-        { id: 3, text: "Your cycle has been consistent this month.", icon: "🌙" }
-    ];
+const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, symptomLogs, calculatePhase, cycleEntries = [] }) => {
+    const generatedInsights = useMemo(() => {
+        if (!cycleEntries || cycleEntries.length === 0) {
+            return [
+                { id: 1, text: "Start logging your days to get personalized insights.", icon: "✨" }
+            ];
+        }
+
+        const insights = [];
+        let idCounter = 1;
+
+        const periodStarts = cycleEntries.filter(e => e.phase === 'period_start').map(e => new Date(e.period_start_date)).sort((a, b) => a - b);
+        if (periodStarts.length > 1) {
+            let totalDiff = 0;
+            for (let i = 1; i < periodStarts.length; i++) {
+                totalDiff += (periodStarts[i] - periodStarts[i - 1]) / (1000 * 60 * 60 * 24);
+            }
+            const avg = Math.round(totalDiff / (periodStarts.length - 1));
+            insights.push({ id: idCounter++, text: `Your average cycle length is ${avg} days.`, icon: "🌙" });
+        } else {
+            const defaultLen = cycleEntries[0]?.cycle_length || 28;
+            insights.push({ id: idCounter++, text: `You've set your cycle to ${defaultLen} days! Log more periods for an exact average.`, icon: "🌙" });
+        }
+
+        const symptomCounts = {};
+        const moodCounts = {};
+
+        cycleEntries.forEach(entry => {
+            if (entry.symptoms) {
+                entry.symptoms.forEach(s => {
+                    symptomCounts[s] = (symptomCounts[s] || 0) + 1;
+                });
+            }
+            if (entry.mood) {
+                moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+            }
+        });
+
+        const sortedSymptoms = Object.entries(symptomCounts).sort((a, b) => b[1] - a[1]);
+        if (sortedSymptoms.length > 0) {
+            const topSymptom = sortedSymptoms[0][0];
+            insights.push({ id: idCounter++, text: `You frequently log experiencing ${topSymptom.toLowerCase()}.`, icon: "☁️" });
+        }
+
+        const sortedMoods = Object.entries(moodCounts).sort((a, b) => b[1] - a[1]);
+        if (sortedMoods.length > 0) {
+            const topMood = sortedMoods[0][0];
+            insights.push({ id: idCounter++, text: `Your most frequently logged mood is ${topMood}.`, icon: topMood });
+        }
+
+        if (insights.length < 3) {
+            insights.push({ id: idCounter++, text: "Your body is unique. Consistency is key to better insights.", icon: "✨" })
+        }
+
+        return insights.slice(0, 3);
+    }, [cycleEntries]);
 
     return (
         <motion.div
@@ -34,7 +85,7 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px', opacity: 0.8 }}>AI Insights</h3>
-                    {mockInsights.map((insight, index) => (
+                    {generatedInsights.map((insight) => (
                         <InsightCard
                             key={insight.id}
                             insight={insight.text}

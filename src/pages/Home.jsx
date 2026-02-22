@@ -116,7 +116,6 @@ const Home = ({ data, phase, currentDay, cycleLength, isCareMode }) => {
                                 height: '100%',
                                 padding: '24px',
                                 borderRadius: '32px',
-                                border: 'none',
                                 cursor: 'pointer',
                                 textAlign: 'left',
                                 background: 'rgba(255, 126, 185, 0.1)',
