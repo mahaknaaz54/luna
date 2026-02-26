@@ -58,6 +58,16 @@ const ChatBox = ({ onClose }) => {
             });
 
             if (!response.ok) {
+                // If 404, it likely means the /api/chat route isn't being served (wrong dev command)
+                if (response.status === 404) {
+                    setMessages(prev => [...prev, {
+                        role: 'ai',
+                        text: 'Luna AI is having trouble connecting to the backend. If you are developing locally, make sure to run using "vercel dev" instead of "npm run dev".'
+                    }]);
+                    setLoading(false);
+                    return;
+                }
+
                 const errData = await response.json().catch(() => ({}));
                 // For rate limits, show the friendly message from the server
                 if (response.status === 429 && errData.reply) {
@@ -73,7 +83,10 @@ const ChatBox = ({ onClose }) => {
             setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
         } catch (err) {
             console.error('Chat error:', err);
-            setMessages(prev => [...prev, { role: 'ai', text: `Error: ${err.message}` }]);
+            const errorMsg = err.message === 'Failed to fetch'
+                ? 'Could not connect to the AI server. Please check your internet or run "vercel dev".'
+                : `Error: ${err.message}`;
+            setMessages(prev => [...prev, { role: 'ai', text: errorMsg }]);
         } finally {
             setLoading(false);
         }

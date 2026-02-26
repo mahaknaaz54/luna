@@ -1,9 +1,34 @@
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useMemo } from 'react';
 import HeatmapCalendar from '../components/HeatmapCalendar';
 import InsightCard from '../components/InsightCard';
+import { fetchAIAnalysis } from '../api/analyzeApi';
 
 const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, symptomLogs, calculatePhase, cycleEntries = [] }) => {
+    const [aiAnalysis, setAiAnalysis] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState(null);
+
+    useEffect(() => {
+        const loadAIAnalysis = async () => {
+            if (!cycleEntries || cycleEntries.length < 3) return; // Don't bother if too little data
+
+            setAiLoading(true);
+            setAiError(null);
+            try {
+                const data = await fetchAIAnalysis();
+                setAiAnalysis(data);
+            } catch (err) {
+                console.error("AI Analysis error:", err);
+                setAiError(err.message);
+            } finally {
+                setAiLoading(false);
+            }
+        };
+
+        loadAIAnalysis();
+    }, [cycleEntries]);
+
     const generatedInsights = useMemo(() => {
         if (!cycleEntries || cycleEntries.length === 0) {
             return [
@@ -84,15 +109,51 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
                 />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px', opacity: 0.8 }}>AI Insights</h3>
-                    {generatedInsights.map((insight) => (
-                        <InsightCard
-                            key={insight.id}
-                            insight={insight.text}
-                            phase={phase}
-                            icon={insight.icon}
-                        />
-                    ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, opacity: 0.8 }}>AI Insights</h3>
+                        {aiLoading && <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>Luna is analyzing...</span>}
+                    </div>
+
+                    {aiError && (
+                        <div className="glass" style={{ padding: '16px', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--color-pms)', border: '1px solid rgba(255,100,100,0.2)' }}>
+                            {aiError.includes('not configured') ? "AI not configured. Add your Gemini API key to see deep insights." : `Note: Using local insights. (${aiError})`}
+                        </div>
+                    )}
+
+                    {aiAnalysis ? (
+                        <>
+                            <InsightCard
+                                insight={aiAnalysis.summary}
+                                phase={phase}
+                                icon="🌙"
+                            />
+                            {aiAnalysis.patterns.map((p, i) => (
+                                <InsightCard
+                                    key={`pattern-${i}`}
+                                    insight={p}
+                                    phase={phase}
+                                    icon="🔍"
+                                />
+                            ))}
+                            {aiAnalysis.recommendations.map((r, i) => (
+                                <InsightCard
+                                    key={`rec-${i}`}
+                                    insight={r}
+                                    phase={phase}
+                                    icon="✨"
+                                />
+                            ))}
+                        </>
+                    ) : (
+                        generatedInsights.map((insight) => (
+                            <InsightCard
+                                key={insight.id}
+                                insight={insight.text}
+                                phase={phase}
+                                icon={insight.icon}
+                            />
+                        ))
+                    )}
                 </div>
 
                 <div className="glass" style={{ padding: '24px', borderRadius: '32px' }}>
