@@ -20,8 +20,8 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     : null;
 
-const genAI = process.env.GEMINI_API_KEY
-    ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+const genAI = GEMINI_API_KEY
+    ? new GoogleGenerativeAI(GEMINI_API_KEY)
     : null;
 
 export default async function handler(req, res) {
@@ -51,8 +51,11 @@ export default async function handler(req, res) {
         const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
         if (authError || !user) {
+            console.error('Auth error:', authError?.message);
             return res.status(401).json({ error: 'Invalid or expired token.' });
         }
+
+        console.log('Authenticated user:', user.id);
 
         // Step 2: Fetch user data from Supabase
         const [profileRes, cycleRes] = await Promise.all([
@@ -61,8 +64,22 @@ export default async function handler(req, res) {
                 .order('period_start_date', { ascending: false }).limit(50)
         ]);
 
+        if (profileRes.error) console.warn('Profile fetch warning:', profileRes.error.message);
+        if (cycleRes.error) console.warn('Cycle entries fetch warning:', cycleRes.error.message);
+
         const profile = profileRes.data || { full_name: 'User' };
         const cycleEntries = cycleRes.data || [];
+
+        console.log(`Found ${cycleEntries.length} cycle entries for user ${user.id}`);
+
+        // Return early if not enough data
+        if (cycleEntries.length < 2) {
+            return res.status(200).json({
+                summary: "You haven't logged enough data yet for AI analysis. Keep tracking your cycle regularly!",
+                patterns: ['Log at least 2-3 cycle entries to unlock personalized AI insights.'],
+                recommendations: ['Try logging your period start date, symptoms, and mood daily for the most accurate insights.']
+            });
+        }
 
         // Step 3: Build the analysis prompt
         const prompt = `
@@ -97,10 +114,11 @@ Rules:
 - Always return valid JSON.
 `;
 
-        // Step 4: Send to Gemini
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        // Step 4: Send to Gemini 1.5 Flash (stable, widely available)
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
+        console.log('Gemini raw response length:', responseText.length);
 
         // Step 5: Clean and parse the JSON response
         const cleaned = responseText
@@ -112,8 +130,8 @@ Rules:
             const analysis = JSON.parse(cleaned);
             return res.status(200).json(analysis);
         } catch (parseErr) {
-            console.error('JSON Parse Error:', parseErr, 'Raw Text:', responseText);
-            // Fallback: If AI fails to return JSON, try to extract it more aggressively
+            console.error('JSON Parse Error:', parseErr.message, '| Raw:', responseText.substring(0, 300));
+            // Fallback: extract JSON block from response
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 const retryAnalysis = JSON.parse(jsonMatch[0]);
@@ -123,7 +141,7 @@ Rules:
         }
 
     } catch (err) {
-        console.error('Analyze error:', err);
+        console.error('Analyze error:', err.message || String(err));
         const msg = err.message || String(err);
 
         // Friendly message for rate limits
@@ -139,7 +157,7 @@ Rules:
             summary: 'Unable to generate analysis at this time. Please try again later.',
             patterns: ['Not enough data to identify patterns yet.'],
             recommendations: ['Continue logging your daily symptoms and moods for better insights.'],
-            debug: msg // Add debug info for the developer
+            debug: msg
         });
     }
 }
