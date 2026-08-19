@@ -41,20 +41,29 @@ const ChatBox = ({ onClose }) => {
                 return;
             }
 
+            // Fetch profile and cycle data for the AI context
+            const { data: profileData } = await supabase.from('users_profile').select('*').eq('id', currentSession.user.id).single();
+            const { data: cycleData } = await supabase.from('cycle_entries').select('*').eq('user_id', currentSession.user.id).order('period_start_date', { ascending: false }).limit(20);
+
             // Build conversation history for context (last 10 messages)
             const history = messages.slice(-10).map(m => ({
                 role: m.role === 'user' ? 'user' : 'model',
                 text: m.text
             }));
 
-            // Call the Vercel serverless function (same domain, no CORS)
+            // Call the serverless function
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${currentSession.access_token}`
                 },
-                body: JSON.stringify({ question, history })
+                body: JSON.stringify({ 
+                    question, 
+                    history, 
+                    profile: profileData || { full_name: 'there' }, 
+                    cycleEntries: cycleData || [] 
+                })
             });
 
             if (!response.ok) {

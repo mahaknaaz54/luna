@@ -11,20 +11,35 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         // 1. Get initial session
         const getSession = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) {
+                    console.error("Supabase getSession error:", error);
+                }
+                setSession(session);
+                setUser(session?.user ?? null);
+            } catch (err) {
+                console.error("Failed to get initial session:", err);
+            } finally {
+                setLoading(false);
+            }
         };
 
         getSession();
 
         // 2. Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
+        let subscription;
+        try {
+            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+                setSession(session);
+                setUser(session?.user ?? null);
+                setLoading(false);
+            });
+            subscription = data?.subscription;
+        } catch (err) {
+            console.error("Failed to register auth state listener:", err);
             setLoading(false);
-        });
+        }
 
         return () => {
             subscription?.unsubscribe();
