@@ -2,6 +2,33 @@
 // Client-side mock implementation of Supabase using browser localStorage.
 // This completely replaces Supabase, preventing connections from pausing or shutting off.
 
+export const safeStorage = {
+    getItem: (key) => {
+        try {
+            return localStorage.getItem(key);
+        } catch {
+            return window._lunaMemoryStorage?.[key] ?? null;
+        }
+    },
+    setItem: (key, value) => {
+        try {
+            localStorage.setItem(key, value);
+        } catch {
+            window._lunaMemoryStorage = window._lunaMemoryStorage || {};
+            window._lunaMemoryStorage[key] = String(value);
+        }
+    },
+    removeItem: (key) => {
+        try {
+            localStorage.removeItem(key);
+        } catch {
+            if (window._lunaMemoryStorage) {
+                delete window._lunaMemoryStorage[key];
+            }
+        }
+    }
+};
+
 class MockQueryBuilder {
     constructor(table) {
         this.table = table;
@@ -44,10 +71,12 @@ class MockQueryBuilder {
         let data = [];
         try {
             if (this.table === 'users_profile') {
-                const profiles = JSON.parse(localStorage.getItem('luna-profiles') || '{}');
+                const profilesStr = safeStorage.getItem('luna-profiles');
+                const profiles = JSON.parse(profilesStr || '{}');
                 data = Object.values(profiles);
             } else if (this.table === 'cycle_entries') {
-                data = JSON.parse(localStorage.getItem('luna-cycle-entries') || '[]');
+                const entriesStr = safeStorage.getItem('luna-cycle-entries');
+                data = JSON.parse(entriesStr || '[]');
             }
 
             // Apply filters
@@ -86,22 +115,23 @@ class MockQueryBuilder {
     async insert(row) {
         try {
             if (this.table === 'cycle_entries') {
-                const entries = JSON.parse(localStorage.getItem('luna-cycle-entries') || '[]');
+                const entriesStr = safeStorage.getItem('luna-cycle-entries');
+                const entries = JSON.parse(entriesStr || '[]');
                 // Check if an entry with this date already exists for this user to avoid duplicates
                 const existingIndex = entries.findIndex(e => e.user_id === row.user_id && e.period_start_date === row.period_start_date);
                 
                 const newRow = {
-                    id: Math.random().toString(36).substr(2, 9),
+                    id: 'ent_' + Math.random().toString(36).slice(2, 11),
                     ...row
                 };
 
                 if (existingIndex !== -1) {
                     entries[existingIndex] = { ...entries[existingIndex], ...row };
-                    localStorage.setItem('luna-cycle-entries', JSON.stringify(entries));
+                    safeStorage.setItem('luna-cycle-entries', JSON.stringify(entries));
                     return { data: [entries[existingIndex]], error: null };
                 } else {
                     entries.push(newRow);
-                    localStorage.setItem('luna-cycle-entries', JSON.stringify(entries));
+                    safeStorage.setItem('luna-cycle-entries', JSON.stringify(entries));
                     return { data: [newRow], error: null };
                 }
             }
@@ -114,7 +144,8 @@ class MockQueryBuilder {
     async update(updates) {
         try {
             if (this.table === 'users_profile') {
-                const profiles = JSON.parse(localStorage.getItem('luna-profiles') || '{}');
+                const profilesStr = safeStorage.getItem('luna-profiles');
+                const profiles = JSON.parse(profilesStr || '{}');
                 const idFilter = this.filters.find(f => f.column === 'id');
                 if (idFilter) {
                     const userId = idFilter.value;
@@ -123,16 +154,16 @@ class MockQueryBuilder {
                         ...profiles[userId],
                         ...updates
                     };
-                    localStorage.setItem('luna-profiles', JSON.stringify(profiles));
+                    safeStorage.setItem('luna-profiles', JSON.stringify(profiles));
                     return { data: [profiles[userId]], error: null };
                 }
             } else if (this.table === 'cycle_entries') {
-                const entries = JSON.parse(localStorage.getItem('luna-cycle-entries') || '[]');
+                const entriesStr = safeStorage.getItem('luna-cycle-entries');
+                const entries = JSON.parse(entriesStr || '[]');
                 const idFilter = this.filters.find(f => f.column === 'id');
                 const dateFilter = this.filters.find(f => f.column === 'period_start_date');
                 const userFilter = this.filters.find(f => f.column === 'user_id');
 
-                let updatedCount = 0;
                 const newEntries = entries.map(entry => {
                     let matches = true;
                     if (idFilter && entry.id !== idFilter.value) matches = false;
@@ -140,13 +171,12 @@ class MockQueryBuilder {
                     if (userFilter && entry.user_id !== userFilter.value) matches = false;
 
                     if (matches) {
-                        updatedCount++;
                         return { ...entry, ...updates };
                     }
                     return entry;
                 });
 
-                localStorage.setItem('luna-cycle-entries', JSON.stringify(newEntries));
+                safeStorage.setItem('luna-cycle-entries', JSON.stringify(newEntries));
                 return { data: newEntries, error: null };
             }
             return { data: null, error: null };
@@ -158,7 +188,8 @@ class MockQueryBuilder {
     async delete() {
         try {
             if (this.table === 'cycle_entries') {
-                const entries = JSON.parse(localStorage.getItem('luna-cycle-entries') || '[]');
+                const entriesStr = safeStorage.getItem('luna-cycle-entries');
+                const entries = JSON.parse(entriesStr || '[]');
                 const idFilter = this.filters.find(f => f.column === 'id');
                 const userFilter = this.filters.find(f => f.column === 'user_id');
 
@@ -169,7 +200,7 @@ class MockQueryBuilder {
                     return !matches;
                 });
 
-                localStorage.setItem('luna-cycle-entries', JSON.stringify(newEntries));
+                safeStorage.setItem('luna-cycle-entries', JSON.stringify(newEntries));
             }
             return { data: null, error: null };
         } catch (err) {
@@ -185,7 +216,7 @@ class MockAuth {
 
     async getSession() {
         try {
-            const sessionStr = localStorage.getItem('luna-session');
+            const sessionStr = safeStorage.getItem('luna-session');
             const session = sessionStr ? JSON.parse(sessionStr) : null;
             return { data: { session }, error: null };
         } catch (err) {
@@ -195,9 +226,14 @@ class MockAuth {
 
     onAuthStateChange(callback) {
         this.listeners.add(callback);
-        this.getSession().then(({ data: { session } }) => {
-            callback(session ? 'SIGNED_IN' : 'SIGNED_OUT', session);
-        });
+        this.getSession()
+            .then(({ data: { session } }) => {
+                callback(session ? 'SIGNED_IN' : 'SIGNED_OUT', session);
+            })
+            .catch(err => {
+                console.error('onAuthStateChange getSession error:', err);
+                callback('SIGNED_OUT', null);
+            });
 
         return {
             data: {
@@ -212,37 +248,41 @@ class MockAuth {
 
     async signUp({ email, password }) {
         try {
-            const users = JSON.parse(localStorage.getItem('luna-users') || '[]');
+            const usersStr = safeStorage.getItem('luna-users');
+            const users = JSON.parse(usersStr || '[]');
             if (users.some(u => u.email === email)) {
                 return { data: null, error: { message: 'User already exists.' } };
             }
 
             const newUser = {
-                id: Math.random().toString(36).substr(2, 9),
+                id: 'usr_' + Math.random().toString(36).slice(2, 11),
                 email
             };
 
             users.push({ ...newUser, password });
-            localStorage.setItem('luna-users', JSON.stringify(users));
+            safeStorage.setItem('luna-users', JSON.stringify(users));
 
             // Initialize profile, mimicking DB trigger
-            const profiles = JSON.parse(localStorage.getItem('luna-profiles') || '{}');
+            const profilesStr = safeStorage.getItem('luna-profiles');
+            const profiles = JSON.parse(profilesStr || '{}');
             profiles[newUser.id] = {
                 id: newUser.id,
                 full_name: email.split('@')[0],
                 phone: '',
                 email: email
             };
-            localStorage.setItem('luna-profiles', JSON.stringify(profiles));
+            safeStorage.setItem('luna-profiles', JSON.stringify(profiles));
 
             const session = {
                 user: newUser,
                 access_token: 'mock-access-token-' + newUser.id
             };
-            localStorage.setItem('luna-session', JSON.stringify(session));
+            safeStorage.setItem('luna-session', JSON.stringify(session));
 
             // Notify listeners
-            this.listeners.forEach(cb => cb('SIGNED_IN', session));
+            this.listeners.forEach(cb => {
+                try { cb('SIGNED_IN', session); } catch (e) { console.error(e); }
+            });
 
             return { data: { user: newUser, session }, error: null };
         } catch (err) {
@@ -252,7 +292,8 @@ class MockAuth {
 
     async signInWithPassword({ email, password }) {
         try {
-            const users = JSON.parse(localStorage.getItem('luna-users') || '[]');
+            const usersStr = safeStorage.getItem('luna-users');
+            const users = JSON.parse(usersStr || '[]');
             const userMatch = users.find(u => u.email === email && u.password === password);
 
             if (!userMatch) {
@@ -268,10 +309,11 @@ class MockAuth {
                 user,
                 access_token: 'mock-access-token-' + user.id
             };
-            localStorage.setItem('luna-session', JSON.stringify(session));
+            safeStorage.setItem('luna-session', JSON.stringify(session));
 
             // Ensure profile exists just in case
-            const profiles = JSON.parse(localStorage.getItem('luna-profiles') || '{}');
+            const profilesStr = safeStorage.getItem('luna-profiles');
+            const profiles = JSON.parse(profilesStr || '{}');
             if (!profiles[user.id]) {
                 profiles[user.id] = {
                     id: user.id,
@@ -279,11 +321,13 @@ class MockAuth {
                     phone: '',
                     email: email
                 };
-                localStorage.setItem('luna-profiles', JSON.stringify(profiles));
+                safeStorage.setItem('luna-profiles', JSON.stringify(profiles));
             }
 
             // Notify listeners
-            this.listeners.forEach(cb => cb('SIGNED_IN', session));
+            this.listeners.forEach(cb => {
+                try { cb('SIGNED_IN', session); } catch (e) { console.error(e); }
+            });
 
             return { data: { user, session }, error: null };
         } catch (err) {
@@ -293,8 +337,10 @@ class MockAuth {
 
     async signOut() {
         try {
-            localStorage.removeItem('luna-session');
-            this.listeners.forEach(cb => cb('SIGNED_OUT', null));
+            safeStorage.removeItem('luna-session');
+            this.listeners.forEach(cb => {
+                try { cb('SIGNED_OUT', null); } catch (e) { console.error(e); }
+            });
             return { error: null };
         } catch (err) {
             return { error: { message: err.message } };

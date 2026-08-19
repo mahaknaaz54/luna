@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, ArrowLeft, Download, Trash2, Fingerprint, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { safeStorage } from '../supabaseClient';
 
 const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
     const [isBiometricEnabled, setIsBiometricEnabled] = useState(() => {
-        return localStorage.getItem('luna-biometric-lock') === 'true';
+        return safeStorage.getItem('luna-biometric-lock') === 'true';
     });
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [showExportSuccess, setShowExportSuccess] = useState(false);
@@ -12,7 +13,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
     const toggleBiometric = () => {
         const newState = !isBiometricEnabled;
         setIsBiometricEnabled(newState);
-        localStorage.setItem('luna-biometric-lock', newState);
+        safeStorage.setItem('luna-biometric-lock', newState);
     };
 
     const handleExport = () => {

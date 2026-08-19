@@ -50,7 +50,7 @@ const VALID_THEMES = ['Auto', 'Light', 'Soft Dark'];
 /** Default settings used when localStorage is absent or corrupt. */
 const DEFAULT_SETTINGS = { notifications: true, cycleLength: 28, reminderTime: '09:00', theme: 'Auto' };
 
-import { supabase } from './supabaseClient';
+import { supabase, safeStorage } from './supabaseClient';
 
 function AppContent() {
   const tabs = ['home', 'insights', 'history', 'profile', 'settings'];
@@ -83,7 +83,7 @@ function AppContent() {
 
   const [settings, setSettings] = useState(() => {
     try {
-      const saved = localStorage.getItem('luna-settings');
+      const saved = safeStorage.getItem('luna-settings');
       if (!saved) return DEFAULT_SETTINGS;
       const parsed = JSON.parse(saved);
       // Sanitize the theme value — fall back to 'Auto' if unrecognized
@@ -95,7 +95,7 @@ function AppContent() {
   });
 
   useEffect(() => {
-    localStorage.setItem('luna-settings', JSON.stringify(settings));
+    safeStorage.setItem('luna-settings', JSON.stringify(settings));
     window.dispatchEvent(new Event('luna-settings-change'));
   }, [settings]);
 
@@ -698,7 +698,7 @@ function safeReadTheme(raw) {
 function AppContentWrapper() {
   const [themeMode, setThemeMode] = useState(() => {
     try {
-      const saved = localStorage.getItem('luna-settings');
+      const saved = safeStorage.getItem('luna-settings');
       return safeReadTheme(saved ? JSON.parse(saved) : {});
     } catch {
       return 'Auto'; // Default to Auto if localStorage is corrupt
@@ -709,7 +709,7 @@ function AppContentWrapper() {
   useEffect(() => {
     const sync = () => {
       try {
-        const s = JSON.parse(localStorage.getItem('luna-settings') || '{}');
+        const s = JSON.parse(safeStorage.getItem('luna-settings') || '{}');
         setThemeMode(safeReadTheme(s));
       } catch {
         setThemeMode('Auto'); // Default to Auto on parse failure
