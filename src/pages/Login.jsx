@@ -25,12 +25,10 @@ const Login = () => {
         try {
             if (isSignUp) {
                 const data = await signup(email, password, fullName, phone);
-                // If email confirmation is required, user won't be auto-logged in
                 if (data?.user && !data?.session) {
                     setSuccessMsg('Account created! Please check your email to confirm your account, then log in.');
                     setIsSignUp(false);
                 } else if (data?.session) {
-                    // Auto-login happened (email confirmation disabled in Supabase)
                     setSuccessMsg('Account created! Logging you in...');
                 }
             } else {

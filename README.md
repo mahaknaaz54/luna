@@ -1,16 +1,70 @@
-# React + Vite
+# Luna 🌙
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A calming, elegant, and intelligent cycle tracking application with personalized AI insights, fluid animations, and privacy-first architecture.
 
-Currently, two official plugins are available:
+Live Deployment: [https://luna-track.netlify.app/](https://luna-track.netlify.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🌟 Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Personalized Cycle Tracking**: Automatically calculates current cycle phase (Period, Ovulation, PMS, Follicular/Safe days) and predictions.
+- **Luna AI Health Companion**: Embedded AI assistant powered by Google Gemini 1.5 Flash to provide empathetic, evidence-based cycle analysis.
+- **Adaptive Themes & Care Mode**: Includes Light, Soft Dark, and dynamic time-based Auto modes, plus a dedicated "Care Mode" with softened visuals and calming motion.
+- **Heatmap Calendar & History Log**: Visual cycle calendar and searchable month-by-month history timeline.
+- **Privacy & Security**: End-to-end data encryption with Supabase Row Level Security (RLS) and JSON data export capabilities.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠 Tech Stack
+
+- **Frontend**: React 19, Vite, Framer Motion, Lucide Icons, Vanilla CSS
+- **Backend / Serverless**: Netlify Functions (`netlify/functions/`)
+- **Database & Auth**: Supabase (PostgreSQL + Auth)
+- **AI**: Google Generative AI (Gemini 1.5 Flash)
+- **Hosting**: Netlify
+
+---
+
+## 🚀 Getting Started Locally
+
+### 1. Clone & Install Dependencies
+```bash
+npm install
+```
+
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env.local` and add your keys:
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase project URL (Public) |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anonymous key (Public) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key (Secret, Netlify Functions) |
+| `GEMINI_API_KEY` | Your Google Gemini API key (Secret, Netlify Functions) |
+
+### 3. Run Development Server
+```bash
+npm run dev
+```
+
+### 4. Build for Production
+```bash
+npm run build
+```
+
+---
+
+## 🌐 Netlify Deployment
+
+1. Connect your repository to [Netlify](https://app.netlify.com).
+2. Set Build Command to `npm run build` and Publish Directory to `dist`.
+3. Configure Environment Variables in **Site Configuration → Environment Variables**:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `GEMINI_API_KEY`
+4. Netlify automatically deploys the frontend and serverless functions via `netlify.toml`.

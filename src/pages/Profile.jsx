@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, LogOut, Phone, Mail, Shield, Edit2, X, Check } from 'lucide-react';
+import { Settings, LogOut, Phone, Mail, Shield, Edit2, X, Check, ChevronRight } from 'lucide-react';
 import { useCareMode } from '../context/CareModeContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
@@ -15,10 +15,8 @@ const Profile = ({ onNavigate, onLogout }) => {
         phone: 'Loading...'
     });
 
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-
-    const [editingField, setEditingField] = useState(null); // 'phone' or 'email' or 'full_name'
+    const [editingField, setEditingField] = useState(null); // 'phone' | 'email' | 'full_name'
     const [tempValue, setTempValue] = useState('');
 
     useEffect(() => {
@@ -38,8 +36,6 @@ const Profile = ({ onNavigate, onLogout }) => {
                 }
             } catch (err) {
                 console.error("Unexpected error fetching profile:", err);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -110,6 +106,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleEdit('full_name')}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', opacity: 0.4 }}
+                        aria-label="Edit name"
                     >
                         <Edit2 size={16} />
                     </motion.button>
@@ -132,6 +129,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleEdit('phone')}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', opacity: 0.4 }}
+                            aria-label="Edit phone number"
                         >
                             <Edit2 size={18} />
                         </motion.button>
@@ -149,6 +147,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleEdit('email')}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', opacity: 0.4 }}
+                            aria-label="Edit email"
                         >
                             <Edit2 size={18} />
                         </motion.button>
@@ -213,7 +212,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                             <Settings size={20} strokeWidth={2} />
                             <span style={{ fontWeight: 600, fontSize: '1rem' }}>General Settings</span>
                         </div>
-                        <ChevronRightIcon size={18} opacity={0.3} />
+                        <ChevronRight size={18} opacity={0.3} />
                     </motion.button>
 
                     <motion.button
@@ -236,7 +235,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                             <Shield size={20} strokeWidth={2} />
                             <span style={{ fontWeight: 600, fontSize: '1rem' }}>Privacy & Security</span>
                         </div>
-                        <ChevronRightIcon size={18} opacity={0.3} />
+                        <ChevronRight size={18} opacity={0.3} />
                     </motion.button>
 
                     <motion.button
@@ -304,7 +303,7 @@ const Profile = ({ onNavigate, onLogout }) => {
                                 <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
                                     Edit {editingField === 'full_name' ? 'Name' : editingField === 'phone' ? 'Phone' : 'Email'}
                                 </h3>
-                                <button onClick={() => setEditingField(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}><X size={20} /></button>
+                                <button onClick={() => setEditingField(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }} aria-label="Cancel"><X size={20} /></button>
                             </div>
 
                             <input
@@ -355,12 +354,5 @@ const Profile = ({ onNavigate, onLogout }) => {
         </motion.div>
     );
 };
-
-// Helper for the chevron
-const ChevronRightIcon = ({ size, opacity }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity }}>
-        <path d="m9 18 6-6-6-6" />
-    </svg>
-);
 
 export default Profile;

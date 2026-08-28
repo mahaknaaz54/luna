@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { safeStorage } from '../supabaseClient';
+import { createContext, useContext, useState, useEffect } from 'react';
 
-const CareModeContext = createContext();
+const CareModeContext = createContext(null);
 
 export const useCareMode = () => {
     const context = useContext(CareModeContext);
@@ -13,12 +12,11 @@ export const useCareMode = () => {
 
 export const CareModeProvider = ({ children }) => {
     const [isCareMode, setIsCareMode] = useState(() => {
-        return safeStorage.getItem('care-mode') === 'true';
+        return typeof localStorage !== 'undefined' && localStorage.getItem('care-mode') === 'true';
     });
 
     useEffect(() => {
-        safeStorage.setItem('care-mode', isCareMode);
-        // Apply data attribute to the document element for CSS targeting
+        localStorage.setItem('care-mode', String(isCareMode));
         if (isCareMode) {
             document.documentElement.setAttribute('data-care-mode', 'true');
         } else {

@@ -8,7 +8,6 @@ const THEMES = [
         icon: '✨',
         label: 'Auto',
         sub: 'Time-based',
-        // Purple-to-pink gradient for Auto
         activeGrad: 'linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)',
         activeGlow: 'rgba(167,139,250,0.40)',
     },
@@ -17,7 +16,6 @@ const THEMES = [
         icon: '☀️',
         label: 'Light',
         sub: 'Always bright',
-        // Golden-amber gradient for Light
         activeGrad: 'linear-gradient(135deg, #fbbf24 0%, #f97316 100%)',
         activeGlow: 'rgba(251,191,36,0.40)',
     },
@@ -26,7 +24,6 @@ const THEMES = [
         icon: '🌙',
         label: 'Dark',
         sub: 'Always cozy',
-        // Indigo-violet gradient for Soft Dark
         activeGrad: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
         activeGlow: 'rgba(99,102,241,0.45)',
     },
@@ -78,6 +75,7 @@ const Settings = ({ settings, setSettings, onBack }) => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer', color: 'var(--text-main)'
                     }}
+                    aria-label="Go back"
                 >
                     <ChevronLeft size={24} />
                 </motion.button>
@@ -110,8 +108,9 @@ const Settings = ({ settings, setSettings, onBack }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <input type="range" min="21" max="35"
                             value={settings.cycleLength}
-                            onChange={(e) => handleSelect('cycleLength', parseInt(e.target.value))}
+                            onChange={(e) => handleSelect('cycleLength', parseInt(e.target.value, 10))}
                             style={{ flex: 1, accentColor: 'var(--color-period)' }}
+                            aria-label="Cycle length range"
                         />
                         <span style={{ fontSize: '1.1rem', fontWeight: 600, width: '60px', textAlign: 'right', color: 'var(--text-main)' }}>{settings.cycleLength} days</span>
                     </div>
@@ -139,7 +138,7 @@ const Settings = ({ settings, setSettings, onBack }) => {
                     />
                 </section>
 
-                {/* ─── Theme Selector ─── */}
+                {/* Theme Selector */}
                 <section className="glass" style={{ padding: '24px', borderRadius: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -184,7 +183,6 @@ const Settings = ({ settings, setSettings, onBack }) => {
                                     key={t.key}
                                     onClick={() => handleSelect('theme', t.key)}
                                     whileTap={{ scale: 0.92 }}
-                                    // Spring scale-in animation when selected
                                     animate={isActive
                                         ? { scale: 1.05, transition: { type: 'spring', stiffness: 420, damping: 22 } }
                                         : { scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } }
@@ -213,7 +211,6 @@ const Settings = ({ settings, setSettings, onBack }) => {
                                             'background 0.5s ease, box-shadow 0.5s ease, border-color 0.4s ease, color 0.4s ease',
                                     }}
                                 >
-                                    {/* Shimmer sheen on active button */}
                                     {isActive && (
                                         <motion.div
                                             initial={{ x: '-120%', opacity: 0 }}

@@ -1,19 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { MONTH_NAMES } from '../utils/dateUtils';
 
-const HeatmapCalendar = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, symptomLogs, calculatePhase }) => {
+const HeatmapCalendar = ({
+    viewDate,
+    onViewDateChange,
+    onDateClick,
+    symptomLogs,
+    calculatePhase
+}) => {
     const [pulsingDate, setPulsingDate] = useState(null);
+    const pulseTimerRef = useRef(null);
 
     const handleDateClick = (dateStr) => {
         setPulsingDate(dateStr);
         onDateClick(dateStr);
-        // Reset pulsing after animation completes
-        setTimeout(() => setPulsingDate(null), 1000);
+        clearTimeout(pulseTimerRef.current);
+        pulseTimerRef.current = setTimeout(() => setPulsingDate(null), 1000);
     };
-    const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
+
+    useEffect(() => {
+        return () => clearTimeout(pulseTimerRef.current);
+    }, []);
 
     const currentYear = viewDate.getFullYear();
     const currentMonth = viewDate.getMonth();
@@ -30,10 +39,14 @@ const HeatmapCalendar = ({ viewDate, onViewDateChange, periodDays, onDateClick, 
     };
 
     const getOpacity = (day) => {
-        // Simulate intensity variations (e.g., flow strength or symptom severity)
         const intensities = [0.4, 0.7, 0.9, 1, 0.8, 0.6];
         return intensities[day % intensities.length];
     };
+
+    const today = new Date();
+    const todayDate = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
 
     return (
         <motion.div
@@ -48,13 +61,14 @@ const HeatmapCalendar = ({ viewDate, onViewDateChange, periodDays, onDateClick, 
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                    {monthNames[currentMonth]} {currentYear}
+                    {MONTH_NAMES[currentMonth]} {currentYear}
                 </h3>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => onViewDateChange(new Date(currentYear, currentMonth - 1, 1))}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-soft)' }}
+                        aria-label="Previous month"
                     >
                         <ChevronLeft size={20} />
                     </motion.button>
@@ -62,6 +76,7 @@ const HeatmapCalendar = ({ viewDate, onViewDateChange, periodDays, onDateClick, 
                         whileTap={{ scale: 0.9 }}
                         onClick={() => onViewDateChange(new Date(currentYear, currentMonth + 1, 1))}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-soft)' }}
+                        aria-label="Next month"
                     >
                         <ChevronRight size={20} />
                     </motion.button>
@@ -81,7 +96,7 @@ const HeatmapCalendar = ({ viewDate, onViewDateChange, periodDays, onDateClick, 
                     {Array.from({ length: daysInMonth }).map((_, i) => {
                         const day = i + 1;
                         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isToday = day === new Date().getDate() && currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear();
+                        const isToday = day === todayDate && currentMonth === todayMonth && currentYear === todayYear;
 
                         return (
                             <motion.div

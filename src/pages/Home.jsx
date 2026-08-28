@@ -1,24 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CycleOrb from '../components/CycleOrb';
+import { getGreeting } from '../utils/dateUtils';
+
+const BURST_EMOJIS = ['🌸', '✨', '💧', '☁️', '🌙'];
 
 const Home = ({ data, phase, currentDay, cycleLength, isCareMode }) => {
     const [emojis, setEmojis] = useState([]);
-    const [greeting, setGreeting] = useState('Good morning');
-
-    useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) setGreeting('Good morning');
-        else if (hour < 18) setGreeting('Good afternoon');
-        else if (hour < 22) setGreeting('Good evening');
-        else setGreeting('Good night');
-    }, []);
+    const greeting = useMemo(() => getGreeting(), []);
 
     const handleLogClick = () => {
         const newEmoji = {
-            id: Date.now(),
-            char: ['🌸', '✨', '💧', '☁️', '🌙'][Math.floor(Math.random() * 5)],
-            x: Math.random() * 100 - 50, // random offset
+            id: Date.now() + Math.random(),
+            char: BURST_EMOJIS[Math.floor(Math.random() * BURST_EMOJIS.length)],
+            x: Math.random() * 100 - 50,
         };
         setEmojis(prev => [...prev, newEmoji]);
         setTimeout(() => {
@@ -96,15 +91,15 @@ const Home = ({ data, phase, currentDay, cycleLength, isCareMode }) => {
                     style={{ padding: '24px', borderRadius: '32px', width: '100%', textAlign: 'center' }}
                 >
                     <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px', opacity: 0.8 }}>Today's Reflection</h3>
-                    <p style={{ fontSize: '0.95rem', fontStyle: 'italic', leading: 1.6, opacity: 0.7 }}>
-                        "{data.msg}"
+                    <p style={{ fontSize: '0.95rem', fontStyle: 'italic', lineHeight: 1.6, opacity: 0.7 }}>
+                        "{data?.msg}"
                     </p>
                 </motion.div>
 
                 <div className="responsive-grid" style={{ position: 'relative' }}>
                     <div className="glass" style={{ padding: '24px', borderRadius: '32px' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.4, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Phase info</span>
-                        <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>{data.extra}</p>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>{data?.extra}</p>
                     </div>
                     <div style={{ position: 'relative' }}>
                         <motion.button

@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
 // Components
 import BottomNav from './components/BottomNav';
 import FloatingBubble from './components/FloatingBubble';
+import PhaseBackground from './components/PhaseBackground';
 
 // Pages
 import Home from './pages/Home';
@@ -15,12 +16,18 @@ import Settings from './pages/Settings';
 import PrivacySecurity from './pages/PrivacySecurity';
 import Login from './pages/Login';
 
-import PhaseBackground from './components/PhaseBackground';
+// Context
 import { CareModeProvider, useCareMode } from './context/CareModeContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-// Smooth full-page crossfade overlay when theme switches
+// Database & Utils
+import { supabase } from './supabaseClient';
+import { DEFAULT_SETTINGS, VALID_THEMES } from './constants/phases';
+import { formatDate } from './utils/dateUtils';
+import { calculatePhase, getPhaseDisplayData } from './utils/cycleCalculations';
+
+// Smooth crossfade overlay when switching theme
 function ThemeFadeOverlay() {
   const { isTransitioning } = useTheme();
   return (
@@ -45,19 +52,14 @@ function ThemeFadeOverlay() {
   );
 }
 
-/** Valid theme keys that can be stored in luna-settings. */
-const VALID_THEMES = ['Auto', 'Light', 'Soft Dark'];
-/** Default settings used when localStorage is absent or corrupt. */
-const DEFAULT_SETTINGS = { notifications: true, cycleLength: 28, reminderTime: '09:00', theme: 'Auto' };
-
-import { supabase, safeStorage } from './supabaseClient';
+const TABS = ['home', 'insights', 'history', 'profile', 'settings'];
 
 function AppContent() {
-  const tabs = ['home', 'insights', 'history', 'profile', 'settings'];
   const [activeTab, setActiveTab] = useState('home');
   const [direction, setDirection] = useState(0);
 
   const { user, logout } = useAuth();
+  const { isCareMode } = useCareMode();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -65,28 +67,25 @@ function AppContent() {
     try {
       await logout();
     } catch (err) {
-      console.error(err);
+      console.error('Logout error:', err);
     } finally {
       setIsLoggingOut(false);
       setActiveTab('home');
     }
   };
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-
-  const { isCareMode } = useCareMode();
-
   const [symptomLogs, setSymptomLogs] = useState({});
+  const [selectedEmoji, setSelectedEmoji] = useState(null);
+  const [comment, setComment] = useState('');
+  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+  const [viewDate, setViewDate] = useState(new Date());
+  const [logDate, setLogDate] = useState(null);
 
   const [settings, setSettings] = useState(() => {
     try {
-      const saved = safeStorage.getItem('luna-settings');
+      const saved = localStorage.getItem('luna-settings');
       if (!saved) return DEFAULT_SETTINGS;
       const parsed = JSON.parse(saved);
-      // Sanitize the theme value — fall back to 'Auto' if unrecognized
       if (!VALID_THEMES.includes(parsed?.theme)) parsed.theme = 'Auto';
       return { ...DEFAULT_SETTINGS, ...parsed };
     } catch {
@@ -95,20 +94,14 @@ function AppContent() {
   });
 
   useEffect(() => {
-    safeStorage.setItem('luna-settings', JSON.stringify(settings));
+    localStorage.setItem('luna-settings', JSON.stringify(settings));
     window.dispatchEvent(new Event('luna-settings-change'));
   }, [settings]);
 
-
-
-  const [selectedEmoji, setSelectedEmoji] = useState(null);
-  const [comment, setComment] = useState('');
-  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
-
-  const updateLogDate = (date) => {
+  const updateLogDate = useCallback((date) => {
     setLogDate(date);
     if (date && symptomLogs[date]) {
-      setSelectedEmoji(symptomLogs[date].emoji);
+      setSelectedEmoji(symptomLogs[date].emoji || null);
       setComment(symptomLogs[date].comment || '');
       setSelectedSymptoms(symptomLogs[date].symptoms || []);
     } else {
@@ -116,7 +109,7 @@ function AppContent() {
       setComment('');
       setSelectedSymptoms([]);
     }
-  };
+  }, [symptomLogs]);
 
   const handleTabChange = (newTab) => {
     if (newTab === 'log-modal') {
@@ -124,14 +117,11 @@ function AppContent() {
       updateLogDate(today);
       return;
     }
-    const currentIndex = tabs.indexOf(activeTab);
-    const newIndex = tabs.indexOf(newTab);
+    const currentIndex = TABS.indexOf(activeTab);
+    const newIndex = TABS.indexOf(newTab);
     setDirection(newIndex > currentIndex ? 1 : -1);
     setActiveTab(newTab);
   };
-
-  const [viewDate, setViewDate] = useState(new Date());
-  const [logDate, setLogDate] = useState(null);
 
   const [cycleData, setCycleData] = useState({
     periodDays: [],
@@ -146,20 +136,25 @@ function AppContent() {
   useEffect(() => {
     const fetchCycleData = async () => {
       if (!user) return;
-      const { data, error } = await supabase.from('cycle_entries').select('*').eq('user_id', user.id).order('period_start_date', { ascending: false });
+      const { data, error } = await supabase
+        .from('cycle_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('period_start_date', { ascending: false });
+
       if (error) {
         console.error("Error fetching cycle entries:", error);
         return;
       }
 
-      setCycleEntries(data);
+      setCycleEntries(data || []);
 
       const newSymptomLogs = {};
       const newPeriodDays = [];
       const newStartMarkers = [];
       const newEndMarkers = [];
 
-      data.forEach(entry => {
+      (data || []).forEach(entry => {
         const d = entry.period_start_date;
         if (entry.mood || entry.notes || (entry.symptoms && entry.symptoms.length > 0)) {
           newSymptomLogs[d] = {
@@ -179,7 +174,7 @@ function AppContent() {
         }
       });
 
-      // Auto-fill logic reconstruction based on fetched markers
+      // Auto-fill continuous period days between start and end markers
       const finalPeriodDays = new Set([...newPeriodDays]);
       newStartMarkers.sort().forEach(startD => {
         const nextEnd = newEndMarkers.filter(d => d >= startD).sort()[0];
@@ -213,7 +208,7 @@ function AppContent() {
       await supabase.from('cycle_entries').delete().eq('id', id);
       setRefreshTick(prev => prev + 1);
     } catch (err) {
-      console.error(err);
+      console.error('Delete error:', err);
     }
   };
 
@@ -221,64 +216,18 @@ function AppContent() {
     setCycleData(prev => ({ ...prev, cycleLength: settings.cycleLength }));
   }, [settings.cycleLength]);
 
-  const calculatePhase = (targetDate) => {
-    const today = targetDate || new Date();
-    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayStr = formatDate(todayDate);
+  const currentCyclePhase = useCallback((targetDate) => {
+    return calculatePhase({
+      targetDate,
+      periodDays: cycleData.periodDays,
+      startMarkers: cycleData.startMarkers,
+      endMarkers: cycleData.endMarkers,
+      cycleLength: cycleData.cycleLength
+    });
+  }, [cycleData]);
 
-    // 1. If explicitly logged as period day
-    if (cycleData.periodDays.includes(todayStr)) return { currentDay: 1, currentPhase: 'period' };
-
-    // 2. Find latest markers
-    const lastStart = [...cycleData.startMarkers].filter(d => d <= todayStr).sort().reverse()[0];
-    const lastEnd = [...cycleData.endMarkers].filter(d => d <= todayStr).sort().reverse()[0];
-
-    if (!lastStart) return { currentDay: 1, currentPhase: 'safe' };
-
-    const start = new Date(lastStart.replace(/-/g, '/'));
-    const diffTime = todayDate - start;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const currentDayInCycle = ((diffDays - 1) % cycleData.cycleLength) + 1;
-
-    // 3. If end date exists and is after/on start
-    if (lastEnd && lastEnd >= lastStart) {
-      const end = new Date(lastEnd.replace(/-/g, '/'));
-      const daysSinceEnd = Math.floor((todayDate - end) / (1000 * 60 * 60 * 24));
-
-      if (daysSinceEnd > 0) {
-        // Safe (7 days), Ovulation (4 days), PMS (rest)
-        if (daysSinceEnd <= 7) return { currentDay: currentDayInCycle, currentPhase: 'safe' };
-        if (daysSinceEnd <= 11) return { currentDay: currentDayInCycle, currentPhase: 'ovulation' };
-        return { currentDay: currentDayInCycle, currentPhase: 'pms' };
-      }
-    }
-
-    // 4. Default fallback based on cycle day
-    let currentPhase = 'safe';
-    if (currentDayInCycle <= 5) currentPhase = 'period';
-    else if (currentDayInCycle <= 12) currentPhase = 'safe';
-    else if (currentDayInCycle <= 16) currentPhase = 'ovulation';
-    else currentPhase = 'pms';
-
-    return { currentDay: currentDayInCycle, currentPhase };
-  };
-
-  const { currentDay, currentPhase: phase } = calculatePhase();
-
-  const getPhaseData = () => {
-    const nextPeriodIn = cycleData.cycleLength - currentDay + 1;
-    const nextText = nextPeriodIn <= 1 ? 'Period due soon' : `Next period in ${nextPeriodIn} days`;
-
-    switch (phase) {
-      case 'period': return { title: 'Period Phase', day: `Day ${currentDay}`, msg: 'Slow down and cozy up. Deep berry tones & rest.', icon: '🩸', extra: nextText }
-      case 'ovulation': return { title: 'Ovulation window', day: `Day ${currentDay}`, msg: 'Peak energy & golden glow. You are radiant today.', icon: '🌸', extra: nextText }
-      case 'pms': return { title: 'PMS Phase', day: `Day ${currentDay}`, msg: 'Calm & comforting atmosphere. Be gentle with yourself.', icon: '☁️', extra: nextText }
-      case 'safe': return { title: 'Safe Days', day: `Day ${currentDay}`, msg: 'Soft sage & minimal floral. New beginnings.', icon: '🌿', extra: nextText }
-      default: return { title: 'Cycle Phase', day: `Day ${currentDay}`, msg: '', icon: '🌙', extra: '' }
-    }
-  };
-
-  const phaseData = getPhaseData();
+  const { currentDay, currentPhase: phase } = currentCyclePhase();
+  const phaseData = getPhaseDisplayData(phase, currentDay, cycleData.cycleLength);
 
   const saveToSupabase = async (date, updates) => {
     if (!user) return;
@@ -316,7 +265,7 @@ function AppContent() {
         nextPeriodDays = nextPeriodDays.filter(d => d !== date);
         nextStartMarkers = nextStartMarkers.filter(d => d !== date);
         nextEndMarkers = nextEndMarkers.filter(d => d !== date);
-        phaseUpdate = 'safe'; // Treat as clearing phase or setting safe
+        phaseUpdate = 'safe';
       } else {
         nextPeriodDays.push(date);
         phaseUpdate = 'period';
@@ -365,7 +314,6 @@ function AppContent() {
       }
     }
 
-    // Set local state
     setCycleData(prev => ({
       ...prev,
       periodDays: [...new Set(nextPeriodDays)],
@@ -383,22 +331,13 @@ function AppContent() {
       await saveToSupabase(date, { phase: phaseUpdate });
     }
 
-    setRefreshTick(prev => prev + 1); // trigger re-fetch
+    setRefreshTick(prev => prev + 1);
     setLogDate(null);
   };
 
-  const navigateToMonth = (year, month) => {
-    setViewDate(new Date(year, month, 1));
-    handleTabChange('insights');
-  };
-
-  useEffect(() => {
-    // PhaseBackground handles the background now
-  }, [phase]);
-
   const pageVariants = {
-    initial: (direction) => ({
-      x: direction > 0 ? '10%' : '-10%',
+    initial: (dir) => ({
+      x: dir > 0 ? '10%' : '-10%',
       opacity: 0,
       filter: 'blur(10px)'
     }),
@@ -412,8 +351,8 @@ function AppContent() {
         filter: { duration: 0.4 }
       }
     },
-    exit: (direction) => ({
-      x: direction > 0 ? '-10%' : '10%',
+    exit: (dir) => ({
+      x: dir > 0 ? '-10%' : '10%',
       opacity: 0,
       filter: 'blur(10px)',
       transition: {
@@ -439,13 +378,13 @@ function AppContent() {
             onDateClick={updateLogDate}
             phase={phase}
             symptomLogs={symptomLogs}
-            calculatePhase={calculatePhase}
+            calculatePhase={currentCyclePhase}
             cycleEntries={cycleEntries}
           />
         );
         break;
       case 'history':
-        content = <History cycleEntries={cycleEntries} onDeleteEntry={handleDeleteEntry} onSelectMonth={navigateToMonth} />;
+        content = <History cycleEntries={cycleEntries} onDeleteEntry={handleDeleteEntry} />;
         break;
       case 'profile':
         content = <Profile onNavigate={handleTabChange} onLogout={handleLogout} />;
@@ -534,10 +473,10 @@ function AppContent() {
 
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {/* AI Chat Floating Bubble */}
+      {/* AI Chat Floating Action Button */}
       <FloatingBubble />
 
-      {/* Log Selection Modal integration */}
+      {/* Daily Log Selection Modal */}
       <AnimatePresence>
         {logDate && (
           <div
@@ -593,6 +532,7 @@ function AppContent() {
                       transform: selectedEmoji === emoji ? 'scale(1.2)' : 'scale(1)',
                       transition: 'all 0.2s ease'
                     }}
+                    aria-label={`Select mood ${emoji}`}
                   >
                     {emoji}
                   </motion.button>
@@ -685,34 +625,30 @@ function App() {
   );
 }
 
-/** Theme modes accepted by ThemeProvider. */
 const VALID_THEME_MODES = new Set(['Auto', 'Light', 'Soft Dark']);
 
-/** Read + validate theme from a raw settings object. */
 function safeReadTheme(raw) {
   const val = raw?.theme;
   return typeof val === 'string' && VALID_THEME_MODES.has(val) ? val : 'Auto';
 }
 
-// Wrapper reads settings from localStorage so ThemeProvider gets themeMode
 function AppContentWrapper() {
   const [themeMode, setThemeMode] = useState(() => {
     try {
-      const saved = safeStorage.getItem('luna-settings');
+      const saved = localStorage.getItem('luna-settings');
       return safeReadTheme(saved ? JSON.parse(saved) : {});
     } catch {
-      return 'Auto'; // Default to Auto if localStorage is corrupt
+      return 'Auto';
     }
   });
 
-  // Keep themeMode in sync when settings change (listen for storage events from AppContent)
   useEffect(() => {
     const sync = () => {
       try {
-        const s = JSON.parse(safeStorage.getItem('luna-settings') || '{}');
+        const s = JSON.parse(localStorage.getItem('luna-settings') || '{}');
         setThemeMode(safeReadTheme(s));
       } catch {
-        setThemeMode('Auto'); // Default to Auto on parse failure
+        setThemeMode('Auto');
       }
     };
     window.addEventListener('luna-settings-change', sync);
@@ -721,7 +657,7 @@ function AppContentWrapper() {
 
   return (
     <ThemeProvider themeMode={themeMode}>
-      <AppContent onThemeModeChange={setThemeMode} />
+      <AppContent />
     </ThemeProvider>
   );
 }

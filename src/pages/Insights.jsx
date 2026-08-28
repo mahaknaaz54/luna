@@ -4,14 +4,23 @@ import HeatmapCalendar from '../components/HeatmapCalendar';
 import InsightCard from '../components/InsightCard';
 import { fetchAIAnalysis } from '../api/analyzeApi';
 
-const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, symptomLogs, calculatePhase, cycleEntries = [] }) => {
+const Insights = ({
+    viewDate,
+    onViewDateChange,
+    periodDays,
+    onDateClick,
+    phase,
+    symptomLogs,
+    calculatePhase,
+    cycleEntries = []
+}) => {
     const [aiAnalysis, setAiAnalysis] = useState(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState(null);
 
     useEffect(() => {
         const loadAIAnalysis = async () => {
-            if (!cycleEntries || cycleEntries.length < 3) return; // Don't bother if too little data
+            if (!cycleEntries || cycleEntries.length < 3) return;
 
             setAiLoading(true);
             setAiError(null);
@@ -20,7 +29,7 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
                 setAiAnalysis(data);
             } catch (err) {
                 console.error("AI Analysis error:", err);
-                setAiError(err.message);
+                setAiError(err.message || 'Failed to load AI analysis');
             } finally {
                 setAiLoading(false);
             }
@@ -39,7 +48,11 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
         const insights = [];
         let idCounter = 1;
 
-        const periodStarts = cycleEntries.filter(e => e.phase === 'period_start').map(e => new Date(e.period_start_date)).sort((a, b) => a - b);
+        const periodStarts = cycleEntries
+            .filter(e => e.phase === 'period_start')
+            .map(e => new Date(e.period_start_date.replace(/-/g, '/')))
+            .sort((a, b) => a - b);
+
         if (periodStarts.length > 1) {
             let totalDiff = 0;
             for (let i = 1; i < periodStarts.length; i++) {
@@ -56,7 +69,7 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
         const moodCounts = {};
 
         cycleEntries.forEach(entry => {
-            if (entry.symptoms) {
+            if (entry.symptoms && Array.isArray(entry.symptoms)) {
                 entry.symptoms.forEach(s => {
                     symptomCounts[s] = (symptomCounts[s] || 0) + 1;
                 });
@@ -79,7 +92,7 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
         }
 
         if (insights.length < 3) {
-            insights.push({ id: idCounter++, text: "Your body is unique. Consistency is key to better insights.", icon: "✨" })
+            insights.push({ id: idCounter++, text: "Your body is unique. Consistency is key to better insights.", icon: "✨" });
         }
 
         return insights.slice(0, 3);
@@ -94,7 +107,9 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
         >
             <header style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.6, marginBottom: '4px' }}>Insights</h2>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.03em' }}>Cycle <span className="gradient-text" style={{ background: 'var(--grad-ovulation)', WebkitBackgroundClip: 'text' }}>Overview</span></h1>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.03em' }}>
+                    Cycle <span className="gradient-text" style={{ background: 'var(--grad-ovulation)', WebkitBackgroundClip: 'text' }}>Overview</span>
+                </h1>
             </header>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '100px' }}>
@@ -127,7 +142,7 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
                                 phase={phase}
                                 icon="🌙"
                             />
-                            {aiAnalysis.patterns.map((p, i) => (
+                            {aiAnalysis.patterns?.map((p, i) => (
                                 <InsightCard
                                     key={`pattern-${i}`}
                                     insight={p}
@@ -135,7 +150,7 @@ const Insights = ({ viewDate, onViewDateChange, periodDays, onDateClick, phase, 
                                     icon="🔍"
                                 />
                             ))}
-                            {aiAnalysis.recommendations.map((r, i) => (
+                            {aiAnalysis.recommendations?.map((r, i) => (
                                 <InsightCard
                                     key={`rec-${i}`}
                                     insight={r}

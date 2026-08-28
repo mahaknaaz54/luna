@@ -1,14 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo } from 'react';
 import { Trash2, ChevronRight } from 'lucide-react';
+import { formatDateStr, MONTH_ICONS } from '../utils/dateUtils';
 
-const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
+const History = ({ cycleEntries = [], onDeleteEntry }) => {
     const [expandedMonth, setExpandedMonth] = useState(null);
-
-    const formatDateStr = (dateStr) => {
-        const d = new Date(dateStr.replace(/-/g, '/'));
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
 
     const getPhaseColor = (phase) => {
         if (phase?.includes('period')) return 'var(--color-period)';
@@ -33,7 +29,9 @@ const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
 
     // Group entries by month
     const groupedByMonth = useMemo(() => {
-        const displayEntries = cycleEntries.filter(e => e.phase !== 'safe' || e.mood || e.notes || (e.symptoms && e.symptoms.length > 0));
+        const displayEntries = cycleEntries.filter(
+            e => e.phase !== 'safe' || e.mood || e.notes || (e.symptoms && e.symptoms.length > 0)
+        );
 
         const groups = {};
         displayEntries.forEach(entry => {
@@ -49,11 +47,8 @@ const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
             groups[key].entries.push(entry);
         });
 
-        // Sort months descending (most recent first)
         return Object.values(groups).sort((a, b) => b.key.localeCompare(a.key));
     }, [cycleEntries]);
-
-    const monthIcons = ['🌸', '💐', '🌷', '🌺', '🌻', '🌼', '🍂', '🍁', '❄️', '☀️', '🌙', '✨'];
 
     const handleToggleMonth = (key) => {
         setExpandedMonth(prev => (prev === key ? null : key));
@@ -68,7 +63,9 @@ const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
         >
             <header style={{ marginBottom: '40px' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.6, marginBottom: '4px' }}>Insights</h2>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.03em' }}>Log <span className="gradient-text" style={{ background: 'var(--grad-period)', WebkitBackgroundClip: 'text' }}>History</span></h1>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.03em' }}>
+                    Log <span className="gradient-text" style={{ background: 'var(--grad-period)', WebkitBackgroundClip: 'text' }}>History</span>
+                </h1>
             </header>
 
             {groupedByMonth.length === 0 ? (
@@ -80,7 +77,7 @@ const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
                     {groupedByMonth.map((group, gi) => {
                         const isExpanded = expandedMonth === group.key;
                         const monthNum = parseInt(group.key.split('-')[1], 10) - 1;
-                        const icon = monthIcons[monthNum % monthIcons.length];
+                        const icon = MONTH_ICONS[monthNum % MONTH_ICONS.length];
 
                         return (
                             <motion.div
@@ -101,7 +98,7 @@ const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
                                         border: isExpanded ? '1px solid rgba(255, 126, 185, 0.3)' : '1px solid var(--glass-border)',
                                         background: isExpanded
                                             ? 'rgba(255, 126, 185, 0.08)'
-                                            : 'var(--card-bg)',
+                                             : 'var(--card-bg)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -213,6 +210,7 @@ const History = ({ cycleEntries = [], onDeleteEntry, onSelectMonth }) => {
                                                                             }}
                                                                             onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 75, 75, 0.2)'}
                                                                             onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 75, 75, 0.1)'}
+                                                                            aria-label="Delete entry"
                                                                         >
                                                                             <Trash2 size={16} />
                                                                         </button>

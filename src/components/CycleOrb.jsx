@@ -1,49 +1,23 @@
-import React from 'react';
 import { motion } from 'framer-motion';
+import { PHASE_METADATA } from '../constants/phases';
 
 /**
  * CycleOrb Component
  * A premium, animated cycle visualization component.
  * 
- * @param {number} currentDay - The current day of the cycle.
- * @param {number} totalDays - The total length of the cycle (default 28).
- * @param {string} phase - The current phase ('period', 'ovulation', 'pms', 'safe').
+ * @param {Object} props
+ * @param {number} props.currentDay - The current day of the cycle.
+ * @param {number} [props.totalDays=28] - The total length of the cycle.
+ * @param {string} [props.phase='safe'] - The current phase ('period', 'ovulation', 'pms', 'safe').
+ * @param {boolean} [props.isCareMode=false] - Whether care mode is active.
  */
-const CycleOrb = ({ currentDay, totalDays = 28, phase = 'safe', isCareMode }) => {
+const CycleOrb = ({ currentDay, totalDays = 28, phase = 'safe', isCareMode = false }) => {
     const percentage = Math.min(Math.max((currentDay / totalDays) * 100, 0), 100);
     const radius = 80;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (percentage / 100) * circumference;
 
-    // Phase-specific colors and glows
-    const phaseStyles = {
-        period: {
-            glow: 'rgba(255, 126, 185, 0.6)',
-            start: '#ff7eb9',
-            end: '#7d12ff',
-            label: 'Period'
-        },
-        ovulation: {
-            glow: 'rgba(251, 194, 235, 0.6)',
-            start: '#ffd1ff',
-            end: '#a18cd1',
-            label: 'Ovulation'
-        },
-        pms: {
-            glow: 'rgba(224, 195, 252, 0.6)',
-            start: '#e0c3fc',
-            end: '#8ec5fc',
-            label: 'PMS'
-        },
-        safe: {
-            glow: 'rgba(150, 230, 161, 0.6)',
-            start: '#d4fc79',
-            end: '#96e6a1',
-            label: 'Follicular'
-        }
-    };
-
-    const style = phaseStyles[phase] || phaseStyles.safe;
+    const style = PHASE_METADATA[phase] || PHASE_METADATA.safe;
 
     const containerVariants = {
         animate: {

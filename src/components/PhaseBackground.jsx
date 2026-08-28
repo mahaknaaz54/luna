@@ -1,70 +1,31 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PHASE_METADATA, DARK_PHASE_METADATA } from '../constants/phases';
 
-const phaseStyles = {
-    period: {
-        gradient: 'linear-gradient(135deg, #2D0B1F 0%, #1A0510 100%)',
-        accent1: 'rgba(255, 126, 185, 0.08)',
-        accent2: 'rgba(125, 18, 255, 0.05)',
-        particleColor: 'rgba(255, 255, 255, 0.12)'
-    },
-    ovulation: {
-        gradient: 'linear-gradient(135deg, #FFF5F7 0%, #FEE2E8 100%)',
-        accent1: 'rgba(255, 209, 255, 0.15)',
-        accent2: 'rgba(251, 194, 235, 0.1)',
-        particleColor: 'rgba(255, 182, 193, 0.15)'
-    },
-    pms: {
-        gradient: 'linear-gradient(135deg, #F0F4FF 0%, #E6E9FE 100%)',
-        accent1: 'rgba(224, 195, 252, 0.12)',
-        accent2: 'rgba(142, 197, 252, 0.08)',
-        particleColor: 'rgba(173, 216, 230, 0.12)'
-    },
-    safe: {
-        gradient: 'linear-gradient(135deg, #F7FFF9 0%, #EDF9F0 100%)',
-        accent1: 'rgba(212, 252, 121, 0.08)',
-        accent2: 'rgba(150, 230, 161, 0.1)',
-        particleColor: 'rgba(144, 238, 144, 0.1)'
-    }
-};
+// Pre-computed deterministic positions & delays for organic shapes
+const ORGANIC_SHAPES_CONFIG = [
+    { size: 450, speed: 50, delay: 0, left: '15%', top: '20%' },
+    { size: 550, speed: 65, delay: 3, left: '65%', top: '55%' },
+    { size: 400, speed: 55, delay: 7, left: '40%', top: '80%' },
+];
 
-// Soft-dark overlay gradient — keeps indigo base, adds subtle phase tint
-const darkPhaseStyles = {
-    period: {
-        gradient: 'linear-gradient(135deg, #1e0a28 0%, #16102a 100%)',
-        accent1: 'rgba(244, 114, 182, 0.10)',
-        accent2: 'rgba(124, 58, 237, 0.07)',
-        particleColor: 'rgba(255, 255, 255, 0.08)'
-    },
-    ovulation: {
-        gradient: 'linear-gradient(135deg, #1a0e2e 0%, #16102a 100%)',
-        accent1: 'rgba(192, 132, 252, 0.10)',
-        accent2: 'rgba(129, 140, 248, 0.07)',
-        particleColor: 'rgba(200, 180, 255, 0.08)'
-    },
-    pms: {
-        gradient: 'linear-gradient(135deg, #131428 0%, #16102a 100%)',
-        accent1: 'rgba(167, 139, 250, 0.10)',
-        accent2: 'rgba(129, 140, 248, 0.06)',
-        particleColor: 'rgba(173, 216, 230, 0.07)'
-    },
-    safe: {
-        gradient: 'linear-gradient(135deg, #0e1e1a 0%, #16102a 100%)',
-        accent1: 'rgba(110, 231, 183, 0.08)',
-        accent2: 'rgba(187, 247, 208, 0.05)',
-        particleColor: 'rgba(144, 238, 144, 0.07)'
-    }
-};
-
+// Pre-computed deterministic particle seeds (up to 40 particles)
+const PARTICLE_SEEDS = Array.from({ length: 40 }, (_, i) => {
+    // Pseudo-random pseudo-deterministic generator using sinusoids
+    const pseudoRand1 = Math.abs(Math.sin((i + 1) * 9301 + 49297) % 1);
+    const pseudoRand2 = Math.abs(Math.sin((i + 1) * 49297 + 9301) % 1);
+    const pseudoRand3 = Math.abs(Math.sin((i + 1) * 233280 + 7) % 1);
+    return {
+        key: i,
+        left: (pseudoRand1 * 100).toFixed(2),
+        size: (pseudoRand2 * 3 + 1).toFixed(1),
+        duration: (20 + pseudoRand3 * 15).toFixed(1),
+        delay: (pseudoRand2 * 20).toFixed(1),
+    };
+});
 
 // Layer 2: Blurred floating organic shapes
-const OrganicShape = ({ color, size, speed, delay }) => {
-    // Randomize initial positions once
-    const pos = useMemo(() => ({
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-    }), []);
-
+const OrganicShape = ({ color, size, speed, delay, left, top }) => {
     return (
         <motion.div
             animate={{
@@ -81,8 +42,8 @@ const OrganicShape = ({ color, size, speed, delay }) => {
             }}
             style={{
                 position: 'absolute',
-                left: pos.left,
-                top: pos.top,
+                left,
+                top,
                 width: size,
                 height: size,
                 borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
@@ -96,11 +57,7 @@ const OrganicShape = ({ color, size, speed, delay }) => {
 };
 
 // Layer 3: Tiny low-opacity particles drifting upward
-const TinyParticle = ({ color, delay }) => {
-    const left = useMemo(() => Math.random() * 100, []);
-    const size = useMemo(() => Math.random() * 3 + 1, []);
-    const duration = useMemo(() => 20 + Math.random() * 15, []);
-
+const TinyParticle = ({ color, particle }) => {
     return (
         <motion.div
             initial={{ y: '110vh', opacity: 0 }}
@@ -109,16 +66,16 @@ const TinyParticle = ({ color, delay }) => {
                 opacity: [0, 0.6, 0]
             }}
             transition={{
-                duration: duration,
+                duration: Number(particle.duration),
                 repeat: Infinity,
-                delay: delay,
+                delay: Number(particle.delay),
                 ease: "linear"
             }}
             style={{
                 position: 'absolute',
-                left: `${left}%`,
-                width: size,
-                height: size,
+                left: `${particle.left}%`,
+                width: `${particle.size}px`,
+                height: `${particle.size}px`,
                 borderRadius: '50%',
                 background: color,
                 boxShadow: `0 0 10px ${color}`,
@@ -130,10 +87,11 @@ const TinyParticle = ({ color, delay }) => {
 
 const PhaseBackground = ({ phase = 'safe', isCareMode = false }) => {
     const [isDark, setIsDark] = useState(
-        () => document.body.getAttribute('data-theme') === 'soft-dark'
+        () => (typeof document !== 'undefined' && document.body.getAttribute('data-theme') === 'soft-dark')
     );
 
     useEffect(() => {
+        if (typeof document === 'undefined') return;
         const obs = new MutationObserver(() => {
             setIsDark(document.body.getAttribute('data-theme') === 'soft-dark');
         });
@@ -141,16 +99,18 @@ const PhaseBackground = ({ phase = 'safe', isCareMode = false }) => {
         return () => obs.disconnect();
     }, []);
 
-    const palette = isDark ? darkPhaseStyles : phaseStyles;
+    const palette = isDark ? DARK_PHASE_METADATA : PHASE_METADATA;
     const current = palette[phase] || palette.safe;
 
     const shapes = useMemo(() => [
-        { size: 450, color: current.accent1, speed: 50, delay: 0 },
-        { size: 550, color: current.accent2, speed: 65, delay: 3 },
-        { size: 400, color: current.accent1, speed: 55, delay: 7 },
+        { ...ORGANIC_SHAPES_CONFIG[0], color: current.accent1 },
+        { ...ORGANIC_SHAPES_CONFIG[1], color: current.accent2 },
+        { ...ORGANIC_SHAPES_CONFIG[2], color: current.accent1 },
     ], [current]);
 
-    const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+    const [isMobile, setIsMobile] = useState(
+        () => (typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+    );
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -159,12 +119,7 @@ const PhaseBackground = ({ phase = 'safe', isCareMode = false }) => {
     }, []);
 
     const particleCount = isCareMode ? 20 : (isMobile ? 15 : 40);
-    const particles = useMemo(() =>
-        Array.from({ length: particleCount }).map((_, i) => ({
-            delay: Math.random() * 20,
-            key: i
-        }))
-        , [particleCount]);
+    const visibleParticles = useMemo(() => PARTICLE_SEEDS.slice(0, particleCount), [particleCount]);
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: -1, overflow: 'hidden' }}>
@@ -207,8 +162,8 @@ const PhaseBackground = ({ phase = 'safe', isCareMode = false }) => {
 
                     {/* Layer 3: Tiny Particles (Drifting upward) */}
                     <div style={{ position: 'absolute', inset: 0, opacity: isCareMode ? 0.3 : 0.5 }}>
-                        {particles.map((p) => (
-                            <TinyParticle key={`${phase}-particle-${p.key}`} color={current.particleColor} delay={p.delay} />
+                        {visibleParticles.map((p) => (
+                            <TinyParticle key={`${phase}-particle-${p.key}`} color={current.particleColor} particle={p} />
                         ))}
                     </div>
 

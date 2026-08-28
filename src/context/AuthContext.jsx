@@ -1,7 +1,7 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../supabaseClient';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -11,35 +11,20 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         // 1. Get initial session
         const getSession = async () => {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (error) {
-                    console.error("Supabase getSession error:", error);
-                }
-                setSession(session);
-                setUser(session?.user ?? null);
-            } catch (err) {
-                console.error("Failed to get initial session:", err);
-            } finally {
-                setLoading(false);
-            }
+            const { data: { session } } = await supabase.auth.getSession();
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
         };
 
         getSession();
 
-        // 2. Listen for changes
-        let subscription;
-        try {
-            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-                setSession(session);
-                setUser(session?.user ?? null);
-                setLoading(false);
-            });
-            subscription = data?.subscription;
-        } catch (err) {
-            console.error("Failed to register auth state listener:", err);
+        // 2. Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
             setLoading(false);
-        }
+        });
 
         return () => {
             subscription?.unsubscribe();
@@ -47,8 +32,6 @@ export function AuthProvider({ children }) {
     }, []);
 
     const signup = async (email, password, fullName, phone) => {
-        // 1. Sign up the user (this creates auth.users entry)
-        // A database trigger (handle_new_user) automatically creates the users_profile row
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -56,9 +39,8 @@ export function AuthProvider({ children }) {
 
         if (error) throw error;
 
-        // 2. Update the auto-created profile with full_name and phone
+        // Update auto-created profile with full_name and phone
         if (data?.user) {
-            // Small delay to let the database trigger finish creating the profile row
             await new Promise(resolve => setTimeout(resolve, 500));
 
             const { error: profileError } = await supabase.from('users_profile')

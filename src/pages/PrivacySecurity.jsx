@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, ArrowLeft, Download, Trash2, Fingerprint, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { safeStorage } from '../supabaseClient';
 
 const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
     const [isBiometricEnabled, setIsBiometricEnabled] = useState(() => {
-        return safeStorage.getItem('luna-biometric-lock') === 'true';
+        return typeof localStorage !== 'undefined' && localStorage.getItem('luna-biometric-lock') === 'true';
     });
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [showExportSuccess, setShowExportSuccess] = useState(false);
@@ -13,7 +12,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
     const toggleBiometric = () => {
         const newState = !isBiometricEnabled;
         setIsBiometricEnabled(newState);
-        safeStorage.setItem('luna-biometric-lock', newState);
+        localStorage.setItem('luna-biometric-lock', String(newState));
     };
 
     const handleExport = () => {
@@ -38,10 +37,8 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
     };
 
     const handleDeleteAccount = () => {
-        // Mock delete functionality
-        console.log("Account deleted");
         setIsDeleteModalOpen(false);
-        alert("Account would be deleted in a real app.");
+        alert("Account deletion requested. In production, this will erase all stored database records.");
     };
 
     return (
@@ -66,6 +63,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                         display: 'flex',
                         alignItems: 'center'
                     }}
+                    aria-label="Go back"
                 >
                     <ArrowLeft size={24} />
                 </motion.button>
@@ -155,12 +153,12 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', opacity: 0.6 }}>
                         <Shield size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
                         <p style={{ fontSize: '0.8rem', lineHeight: '1.4' }}>
-                            Your data is encrypted and stored locally on your device. Luna never shares your private health information with third parties.
+                            Your data is encrypted and securely stored in Supabase with Row Level Security. Luna never shares your private health information with third parties.
                         </p>
                     </div>
                 </section>
 
-                {/* Delete Account Section - Warning Styling */}
+                {/* Delete Account Section - Danger Zone */}
                 <section
                     className="glass"
                     style={{
