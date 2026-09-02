@@ -1,78 +1,88 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext(null);
 
+const STORAGE_KEY = 'luna-auth-user';
+const ACCOUNTS_KEY = 'luna-accounts';
+
+// ---------- helpers ----------
+function getAccounts() {
+    try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]'); }
+    catch { return []; }
+}
+function saveAccounts(accounts) {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+function getCurrentUser() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+    catch { return null; }
+}
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 1. Get initial session
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        };
-
-        getSession();
-
-        // 2. Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-            setSession(currentSession);
-            setUser(currentSession?.user ?? null);
-            setLoading(false);
-        });
-
-        return () => {
-            subscription?.unsubscribe();
-        };
+        const stored = getCurrentUser();
+        setUser(stored);
+        setLoading(false);
     }, []);
 
     const signup = async (email, password, fullName, phone) => {
-        const { data, error } = await supabase.auth.signUp({
+        const accounts = getAccounts();
+        if (accounts.find(a => a.email.toLowerCase() === email.toLowerCase())) {
+            throw new Error('An account with this email already exists.');
+        }
+        const newUser = {
+            id: `user_${Date.now()}`,
             email,
             password,
-        });
+            full_name: fullName,
+            phone,
+            created_at: new Date().toISOString()
+        };
+        saveAccounts([...accounts, newUser]);
 
-        if (error) throw error;
-
-        // Update auto-created profile with full_name and phone
-        if (data?.user) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const { error: profileError } = await supabase.from('users_profile')
-                .update({
-                    full_name: fullName,
-                    phone: phone,
-                })
-                .eq('id', data.user.id);
-
-            if (profileError) {
-                console.error("Error updating user profile:", profileError);
-            }
-        }
-        return data;
+        // Auto-login after signup
+        const sessionUser = { id: newUser.id, email: newUser.email, full_name: newUser.full_name, phone: newUser.phone };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+        setUser(sessionUser);
+        return { user: sessionUser };
     };
 
     const login = async (email, password) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (error) throw error;
-        return data;
+        const accounts = getAccounts();
+        const found = accounts.find(
+            a => a.email.toLowerCase() === email.toLowerCase() && a.password === password
+        );
+        if (!found) throw new Error('Invalid email or password.');
+
+        const sessionUser = { id: found.id, email: found.email, full_name: found.full_name, phone: found.phone };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+        setUser(sessionUser);
+        return { user: sessionUser };
     };
 
     const logout = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        localStorage.removeItem(STORAGE_KEY);
+        setUser(null);
+    };
+
+    // Update profile fields in both session and accounts store
+    const updateProfile = (updates) => {
+        const accounts = getAccounts();
+        const idx = accounts.findIndex(a => a.id === user?.id);
+        if (idx !== -1) {
+            accounts[idx] = { ...accounts[idx], ...updates };
+            saveAccounts(accounts);
+        }
+        const updated = { ...user, ...updates };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        setUser(updated);
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, signup, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, signup, login, logout, loading, updateProfile }}>
             {!loading && children}
         </AuthContext.Provider>
     );

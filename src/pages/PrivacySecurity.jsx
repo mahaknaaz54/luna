@@ -38,7 +38,12 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
 
     const handleDeleteAccount = () => {
         setIsDeleteModalOpen(false);
-        alert("Account deletion requested. In production, this will erase all stored database records.");
+        // Clear all luna data from localStorage
+        Object.keys(localStorage)
+            .filter(k => k.startsWith('luna-'))
+            .forEach(k => localStorage.removeItem(k));
+        // Reload to reset app state
+        window.location.reload();
     };
 
     return (
@@ -153,7 +158,7 @@ const PrivacySecurity = ({ onBack, cycleData, symptomLogs }) => {
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', opacity: 0.6 }}>
                         <Shield size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
                         <p style={{ fontSize: '0.8rem', lineHeight: '1.4' }}>
-                            Your data is encrypted and securely stored in Supabase with Row Level Security. Luna never shares your private health information with third parties.
+                            Your data is stored locally on this device. Luna never shares your private health information with third parties.
                         </p>
                     </div>
                 </section>

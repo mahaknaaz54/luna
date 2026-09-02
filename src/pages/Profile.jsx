@@ -3,16 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, LogOut, Phone, Mail, Shield, Edit2, X, Check, ChevronRight } from 'lucide-react';
 import { useCareMode } from '../context/CareModeContext';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabaseClient';
 
 const Profile = ({ onNavigate, onLogout }) => {
     const { isCareMode, setIsCareMode } = useCareMode();
-    const { user } = useAuth();
+    const { user, updateProfile } = useAuth();
 
     const [profileData, setProfileData] = useState({
-        full_name: 'Loading...',
-        email: 'Loading...',
-        phone: 'Loading...'
+        full_name: '',
+        email: '',
+        phone: ''
     });
 
     const [saving, setSaving] = useState(false);
@@ -20,26 +19,13 @@ const Profile = ({ onNavigate, onLogout }) => {
     const [tempValue, setTempValue] = useState('');
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            if (!user) return;
-            try {
-                const { data, error } = await supabase
-                    .from('users_profile')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
-
-                if (error && error.code !== 'PGRST116') {
-                    console.error("Error fetching profile:", error);
-                } else if (data) {
-                    setProfileData(data);
-                }
-            } catch (err) {
-                console.error("Unexpected error fetching profile:", err);
-            }
-        };
-
-        fetchProfile();
+        if (user) {
+            setProfileData({
+                full_name: user.full_name || '',
+                email: user.email || '',
+                phone: user.phone || ''
+            });
+        }
     }, [user]);
 
     const handleEdit = (field) => {
@@ -52,14 +38,7 @@ const Profile = ({ onNavigate, onLogout }) => {
         setSaving(true);
         try {
             const updates = { [editingField]: tempValue };
-
-            const { error } = await supabase
-                .from('users_profile')
-                .update(updates)
-                .eq('id', user.id);
-
-            if (error) throw error;
-
+            updateProfile(updates);
             setProfileData(prev => ({ ...prev, ...updates }));
             setEditingField(null);
         } catch (err) {

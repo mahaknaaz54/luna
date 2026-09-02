@@ -21,8 +21,7 @@ import { CareModeProvider, useCareMode } from './context/CareModeContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-// Database & Utils
-import { supabase } from './supabaseClient';
+// Utils
 import { DEFAULT_SETTINGS, VALID_THEMES } from './constants/phases';
 import { formatDate } from './utils/dateUtils';
 import { calculatePhase, getPhaseDisplayData } from './utils/cycleCalculations';
@@ -133,83 +132,81 @@ function AppContent() {
   const [cycleEntries, setCycleEntries] = useState([]);
   const [refreshTick, setRefreshTick] = useState(0);
 
+  // ---------- localStorage helpers ----------
+  const getCycleKey = () => `luna-cycle-${user?.id}`;
+
+  const loadCycleEntries = () => {
+    if (!user) return [];
+    try { return JSON.parse(localStorage.getItem(getCycleKey()) || '[]'); }
+    catch { return []; }
+  };
+
+  const persistCycleEntries = (entries) => {
+    if (!user) return;
+    localStorage.setItem(getCycleKey(), JSON.stringify(entries));
+  };
+
   useEffect(() => {
-    const fetchCycleData = async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('cycle_entries')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('period_start_date', { ascending: false });
+    if (!user) return;
+    const data = loadCycleEntries();
+    setCycleEntries(data);
 
-      if (error) {
-        console.error("Error fetching cycle entries:", error);
-        return;
+    const newSymptomLogs = {};
+    const newPeriodDays = [];
+    const newStartMarkers = [];
+    const newEndMarkers = [];
+
+    data.forEach(entry => {
+      const d = entry.period_start_date;
+      if (entry.mood || entry.notes || (entry.symptoms && entry.symptoms.length > 0)) {
+        newSymptomLogs[d] = {
+          emoji: entry.mood,
+          comment: entry.notes,
+          symptoms: entry.symptoms || []
+        };
       }
+      if (entry.phase === 'period_start') {
+        newStartMarkers.push(d);
+        newPeriodDays.push(d);
+      } else if (entry.phase === 'period_end') {
+        newEndMarkers.push(d);
+        newPeriodDays.push(d);
+      } else if (entry.phase === 'period') {
+        newPeriodDays.push(d);
+      }
+    });
 
-      setCycleEntries(data || []);
-
-      const newSymptomLogs = {};
-      const newPeriodDays = [];
-      const newStartMarkers = [];
-      const newEndMarkers = [];
-
-      (data || []).forEach(entry => {
-        const d = entry.period_start_date;
-        if (entry.mood || entry.notes || (entry.symptoms && entry.symptoms.length > 0)) {
-          newSymptomLogs[d] = {
-            emoji: entry.mood,
-            comment: entry.notes,
-            symptoms: entry.symptoms || []
-          };
+    // Auto-fill continuous period days between start and end markers
+    const finalPeriodDays = new Set([...newPeriodDays]);
+    newStartMarkers.sort().forEach(startD => {
+      const nextEnd = newEndMarkers.filter(d => d >= startD).sort()[0];
+      if (nextEnd) {
+        let curr = new Date(startD.replace(/-/g, '/'));
+        const end = new Date(nextEnd.replace(/-/g, '/'));
+        let count = 0;
+        while (curr <= end && count < 10) {
+          finalPeriodDays.add(formatDate(curr));
+          curr.setDate(curr.getDate() + 1);
+          count++;
         }
-        if (entry.phase === 'period_start') {
-          newStartMarkers.push(d);
-          newPeriodDays.push(d);
-        } else if (entry.phase === 'period_end') {
-          newEndMarkers.push(d);
-          newPeriodDays.push(d);
-        } else if (entry.phase === 'period') {
-          newPeriodDays.push(d);
-        }
-      });
+      }
+    });
 
-      // Auto-fill continuous period days between start and end markers
-      const finalPeriodDays = new Set([...newPeriodDays]);
-      newStartMarkers.sort().forEach(startD => {
-        const nextEnd = newEndMarkers.filter(d => d >= startD).sort()[0];
-        if (nextEnd) {
-          let curr = new Date(startD.replace(/-/g, '/'));
-          const end = new Date(nextEnd.replace(/-/g, '/'));
-          let count = 0;
-          while (curr <= end && count < 10) {
-            finalPeriodDays.add(formatDate(curr));
-            curr.setDate(curr.getDate() + 1);
-            count++;
-          }
-        }
-      });
-
-      setSymptomLogs(newSymptomLogs);
-      setCycleData(prev => ({
-        ...prev,
-        periodDays: Array.from(finalPeriodDays),
-        startMarkers: newStartMarkers,
-        endMarkers: newEndMarkers
-      }));
-    };
-
-    fetchCycleData();
+    setSymptomLogs(newSymptomLogs);
+    setCycleData(prev => ({
+      ...prev,
+      periodDays: Array.from(finalPeriodDays),
+      startMarkers: newStartMarkers,
+      endMarkers: newEndMarkers
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshTick]);
 
-  const handleDeleteEntry = async (id) => {
+  const handleDeleteEntry = (id) => {
     if (!user) return;
-    try {
-      await supabase.from('cycle_entries').delete().eq('id', id);
-      setRefreshTick(prev => prev + 1);
-    } catch (err) {
-      console.error('Delete error:', err);
-    }
+    const updated = loadCycleEntries().filter(e => e.id !== id);
+    persistCycleEntries(updated);
+    setRefreshTick(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -229,29 +226,22 @@ function AppContent() {
   const { currentDay, currentPhase: phase } = currentCyclePhase();
   const phaseData = getPhaseDisplayData(phase, currentDay, cycleData.cycleLength);
 
-  const saveToSupabase = async (date, updates) => {
+  const saveEntry = (date, updates) => {
     if (!user) return;
-    try {
-      const { data: existing } = await supabase
-        .from('cycle_entries')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('period_start_date', date)
-        .single();
-
-      if (existing) {
-        await supabase.from('cycle_entries').update(updates).eq('id', existing.id);
-      } else {
-        await supabase.from('cycle_entries').insert({
-          user_id: user.id,
-          period_start_date: date,
-          cycle_length: settings.cycleLength || 28,
-          ...updates
-        });
-      }
-    } catch (err) {
-      console.error("Error saving to supabase:", err);
+    const entries = loadCycleEntries();
+    const idx = entries.findIndex(e => e.period_start_date === date);
+    if (idx !== -1) {
+      entries[idx] = { ...entries[idx], ...updates };
+    } else {
+      entries.push({
+        id: `entry_${Date.now()}`,
+        user_id: user.id,
+        period_start_date: date,
+        cycle_length: settings.cycleLength || 28,
+        ...updates
+      });
     }
+    persistCycleEntries(entries);
   };
 
   const handleLogAction = async (date, action) => {
@@ -326,9 +316,9 @@ function AppContent() {
         ...prev,
         [date]: { emoji: selectedEmoji, comment: comment, symptoms: selectedSymptoms }
       }));
-      await saveToSupabase(date, { mood: selectedEmoji, notes: comment, symptoms: selectedSymptoms });
+      saveEntry(date, { mood: selectedEmoji, notes: comment, symptoms: selectedSymptoms });
     } else {
-      await saveToSupabase(date, { phase: phaseUpdate });
+      saveEntry(date, { phase: phaseUpdate });
     }
 
     setRefreshTick(prev => prev + 1);
